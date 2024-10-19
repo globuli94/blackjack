@@ -21,9 +21,15 @@ class Tui(controller:Controller) extends Observer {
       case _
       => println("not a valid command!")
 
+  def clearConsole(): Unit = {
+    println("\u001b[H\u001b[2J") // ANSI escape codes to clear console
+    println("Console has been cleared!")
+  }
+
   override def update(e: Event): Unit =
     e match {
       case Event.AddPlayer => println(controller.toString)
       case Event.Start => println(controller.toString)
+      case _ => ???
     }
 }

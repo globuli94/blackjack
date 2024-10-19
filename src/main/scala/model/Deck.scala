@@ -18,8 +18,7 @@ case class Deck(deck: Queue[Card] = Queue.empty) {
     }
     
     // returns card from deck, if no cards left
-    def draw(): (Card, Deck) = {
-        val card = this.deck.dequeue()
-        (card, Deck(deck))
+    def draw(): Card = {
+        this.deck.dequeue()
     }
 }

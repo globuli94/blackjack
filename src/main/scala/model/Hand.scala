@@ -26,11 +26,10 @@ case class Hand (hand: List[Card] = List.empty) {
     def canSplit: Boolean = hand.size == 2 && hand.head.rank == hand(1).rank
 
     override def toString: String = {
-        val stringBuilder = new StringBuilder("This should be a card")
+        val stringBuilder = new StringBuilder()
         hand.foreach(card => {
-            stringBuilder.append(s"\n[${card.suit} ${card.rank}]")
+            stringBuilder.append(card.toString())
         })
-        stringBuilder.append("\n")
         stringBuilder.toString()
     }
 }
