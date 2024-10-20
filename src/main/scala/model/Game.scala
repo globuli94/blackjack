@@ -4,7 +4,7 @@ import scala.compiletime.ops.string
 import scala.collection.immutable.LazyList.cons
 import scala.annotation.constructorOnly
 
-enum GameState { case Initialized, Betting, Started}
+enum GameState { case Initialized, Betting, Started, Evaluated}
 
 
 case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) {
@@ -26,14 +26,21 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
             if (player.hand.canHit) options = "Hit" :: options
             if (player.hand.canDoubleDown) options = "Double Down" :: options
             if (player.hand.canSplit) options = "Split" :: options
+        } else if(state == GameState.Evaluated) {
+            options = "next round" :: options
         }
         
         return options
     }
 
-    def finishDealer = {
-        println(deck)
-        println(deck.deck.length)
+    def hitDealer: Game = {
+        if(dealer.hand.value < 17) {
+            val new_hand = dealer.hand.addCard(deck.draw())
+            val new_dealer = dealer.copy(hand = new_hand)
+            copy(dealer = new_dealer).evaluate
+        } else {
+            copy(dealer = dealer.copy(state = DealerState.Standing)).evaluate
+        }
     }
 
     def startGame:Game = {
@@ -50,50 +57,44 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
         game_with_shuffled_cards.evaluate
     }
 
+    // game logic
     def evaluate: Game = {
         val any_playing = queue.exists(player => player.state == PlayerState.Playing)
-        
         val any_betting = queue.exists(player => player.state == PlayerState.Betting)
 
         if(!any_betting && state == GameState.Betting) {
-
             dealCards.copy(state = GameState.Started)
-
         } else if(!any_playing && state == GameState.Started) {
-            
-            finishDealer
-            
-            println("EVALUATING ROUND")
+            if(dealer.state != DealerState.Standing || dealer.state != DealerState.Bust) {
+                hitDealer
+            } else {
+                val length = queue.length
+                for(i <- 0 until length) {
+                    val player = queue.dequeue()
 
-            val length = queue.length
+                    player.state match {
+                        case PlayerState.Blackjack =>
+                            val player_money = player.money + player.bet + player.bet * 1.5
+                            queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = PlayerState.WON))
+                        case PlayerState.Standing =>
+                            var player_money:Double = 0
+                            var player_state: PlayerState = PlayerState.LOST
 
-            for(i <- 0 until length) {
-                val player = queue.dequeue()
-
-                player.state match {
-                    case PlayerState.Blackjack =>
-                        val player_money = player.money + player.bet + player.bet * 1.5
-                        queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = PlayerState.WON))
-                    case PlayerState.Standing =>
-                        var player_money:Double = 0
-                        var player_state: PlayerState = PlayerState.LOST
-                        
-                        if(dealer.hand.value > player.hand.value) {
-                            player_money = player.money - player.bet
-                        } else {
-                            player_money = player.money + player.bet * 2
-                            player_state = PlayerState.WON
-                        }
-                        
-                        queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = player_state))
-                    case PlayerState.Busted =>
-                        val player_money = player.money - player.bet
-
-                        queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = PlayerState.LOST))
-                    case _ =>
+                            if(dealer.hand.value > player.hand.value) {
+                                player_money = player.money - player.bet
+                            } else {
+                                player_money = player.money + player.bet * 2
+                                player_state = PlayerState.WON
+                            }
+                            
+                            queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = player_state))
+                        case PlayerState.Busted =>                        
+                            queue.enqueue(player.copy(hand = Hand(), bet = 0, state = PlayerState.LOST))
+                        case _ =>
+                    }
                 }
+                Game(queue = queue, deck = new Deck(), dealer = new Dealer(), state = GameState.Evaluated)
             }
-            Game(queue = queue, deck = new Deck(), dealer = new Dealer(), state = GameState.Initialized)
         } else {
             this
         }        
