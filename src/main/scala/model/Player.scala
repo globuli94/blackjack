@@ -1,11 +1,5 @@
 package model
 
-case class Player(name: String, hand: Hand = Hand(), money: Int = 1000) {
-    override def toString(): String = {
-        val stringBuilder = new StringBuilder()
-        stringBuilder.append(s"\n Player $name \t Bank: $money\n")
-        stringBuilder.append(hand.toString())
-        stringBuilder.append("-------------------------------")
-        stringBuilder.toString()
-    }
-}
+enum PlayerState { case Playing, Standing, Busted, Blackjack, WON, LOST, Betting}
+
+case class Player(name: String, hand: Hand = Hand(), money: Double = 1000, bet: Double = 0, state: PlayerState = PlayerState.Playing)

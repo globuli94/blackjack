@@ -14,5 +14,8 @@ trait Observable {
 enum Event {
   case Start
   case AddPlayer
+  case hitNextPlayer
+  case standNextPlayer
+  case invalidCommand
   case End
 }

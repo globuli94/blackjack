@@ -2,11 +2,12 @@ package controller
 
 import model.Game
 import util.{Observer, Observable, Event}
+import scala.annotation.constructorOnly
 
 case class Controller(var game: Game) extends Observable {
     
-    def start = {
-        game = game.startGame
+    def initializeGame = {
+        game = game.deal
         notifyObservers(Event.Start)
     }
 
@@ -14,6 +15,22 @@ case class Controller(var game: Game) extends Observable {
         game = game.createPlayer(name)
         notifyObservers(Event.AddPlayer)
     }
+
+    def hitNextPlayer = {
+        if(game.queue.head.hand.canHit) {
+            game = game.hit
+
+
+            notifyObservers(Event.hitNextPlayer)
+        } else {
+            notifyObservers(Event.invalidCommand)
+        }
+    }
+
+    def standNextPlayer = {
+        game = game.stand
+        notifyObservers(Event.standNextPlayer)
+    } 
 
     def exit(): Unit = {
         sys.exit(0)

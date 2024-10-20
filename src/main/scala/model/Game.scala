@@ -17,9 +17,63 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
 
         return options
     }
+
+    def finishDealer = {
+        println(deck)
+        println(deck.deck.length)
+    }
+
+    def evaluate: Game = {
+        val any_playing = queue.exists(player => player.state == PlayerState.Playing)
+
+        if(!any_playing) {
+            finishDealer
+            
+            println("EVALUATING ROUND")
+
+            val length = queue.length
+
+            for(i <- 0 until length) {
+                val player = queue.dequeue()
+
+                player.state match {
+                    case PlayerState.Blackjack =>
+                        val player_money = player.money + player.bet + player.bet * 1.5
+                        queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = PlayerState.WON))
+                    case PlayerState.Standing =>
+                        var player_money:Double = 0
+                        var player_state: PlayerState = PlayerState.LOST
+                        
+                        if(dealer.hand.value > player.hand.value) {
+                            player_money = player.money - player.bet
+                        } else {
+                            player_money = player.money + player.bet * 2
+                            player_state = PlayerState.WON
+                        }
+                        
+                        queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = player_state))
+                    case PlayerState.Busted =>
+                        val player_money = player.money - player.bet
+
+                        queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = PlayerState.LOST))
+                    case _ =>
+                }
+            }
+            Game(queue = queue, deck = new Deck(), dealer = new Dealer())
+        } else {
+            this
+        }        
+    }
     
-    def startGame: Game = {
+    def deal: Game = {
         val game_with_shuffled_cards = copy(deck = deck.shuffle)
+        val length = game_with_shuffled_cards.queue.length
+
+        for(i <- 1 to length) {
+            val player = queue.dequeue()
+            queue.enqueue(player.copy(state = PlayerState.Betting))
+        }
+        
         game_with_shuffled_cards.dealInitialCards
     }
     
@@ -40,52 +94,81 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
 
             queue.enqueue(player.copy(hand = second_hand))
         )
+
         copy(queue, deck, Dealer(dealer_hand))
     }
 
     def hit: Game = {
         val player = queue.dequeue()
-        val new_hand = player.hand.addCard(deck.draw())
-        
-        queue.enqueue(player.copy(hand = new_hand))
+        println(deck)
 
-        copy(queue = queue, deck = deck)
+        val new_hand = player.hand.addCard(deck.draw())
+
+        var state: PlayerState = PlayerState.Playing
+
+        if(new_hand.isBust) {
+            state = PlayerState.Busted
+            queue.enqueue(player.copy(hand = new_hand, state = state))
+        } else if (new_hand.hasBlackjack) {
+            state = PlayerState.Blackjack
+            queue.enqueue(player.copy(hand = new_hand, state = state))
+        } else {
+            val new_player = player.copy(hand = new_hand , state = state)
+            queue.prepend(new_player)
+        }
+
+        copy(queue = queue, deck = deck).evaluate
     }
 
     def stand: Game = {
-        // dequeue and enqueue player
-        queue.enqueue(queue.dequeue())
-        copy(queue, deck)
+        val player = queue.dequeue().copy(state = PlayerState.Standing)
+        
+        println(queue)
+        println(player)
+
+        queue.enqueue(player)
+
+        println(queue)
+        copy(queue, deck).evaluate
     }
+
+
+
+
+
+
+
+
 
     override def toString(): String = {
         // clear console
-        println("\u001b[H\u001b[2J")
+        //println("\u001b[H\u001b[2J")
 
         val stringBuilder = new StringBuilder()
 
         stringBuilder.append("---------------------- Dealer ------------------\n")
         
         
-        val box_width = 26 // Adjusted width for the boxes
+        val box_width = 30 // Adjusted width for the boxes
         val box_top = s"+${"-" * (box_width - 2)}+"
         val box_bottom = box_top
-        val name_line = f"| ${"Dealer"}%-22s |" // Align left
+        val name_line = f"| ${"Dealer"}%-26s |" // Align left
 
         var dealer_hand_line: String = ""
         if(dealer.hand.hand.length == 1) {
-            dealer_hand_line = f"|[* *] ${dealer.hand.toString()}%-18s|" // Align left
+            dealer_hand_line = f"| [* *] ${dealer.hand.toString()}%-22s|" // Align left
         } else {
-            dealer_hand_line = f"| ${dealer.hand.toString()}%-22s |" // Align left
+            dealer_hand_line = f"| Hand: ${dealer.hand.toString()}%-22s |" // Align left
         }
         
-        val dealer_value = s"Value: ${dealer.hand.value}"
+        val dealer_value_line = f"| Value: ${dealer.hand.value}%-22s|" // Align left
 
         stringBuilder.append(            
             s"""
                 $box_top
                 $name_line
                 $dealer_hand_line
+                $dealer_value_line
                 $box_bottom
             """)
 
@@ -101,12 +184,14 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
             val playerBank = s"Bank: ${player.money}"
             val playerHand = s"Hand: ${player.hand.toString()}"
             val playerValue = s"Value: ${player.hand.value}"
+            val playerState = s"State: ${player.state}"
 
             // Format each line inside the box
-            val nameLine = f"| $playerName%-22s |" // Align left
-            val bankLine = f"| $playerBank%-22s |" // Align left
-            val handLine = f"| $playerHand%-22s |" // Align left
-            val valueLine = f"| $playerValue%-22s |" // Align left
+            val nameLine = f"| $playerName%-26s |" // Align left
+            val bankLine = f"| $playerBank%-26s |" // Align left
+            val handLine = f"| $playerHand%-26s |" // Align left
+            val valueLine = f"| $playerValue%-26s |" // Align left
+            val stateLine = f"| $playerState%-26s |" // Align left
 
             // Concatenate box lines into a complete box for this player
             s"""
@@ -115,6 +200,7 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
             $bankLine
             $handLine
             $valueLine
+            $stateLine
             $box_bottom
             """
         }
