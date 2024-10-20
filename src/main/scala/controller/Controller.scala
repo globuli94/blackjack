@@ -7,7 +7,12 @@ import scala.annotation.constructorOnly
 case class Controller(var game: Game) extends Observable {
     
     def initializeGame = {
-        game = game.deal
+        game = Game()
+        notifyObservers(Event.Start)
+    }
+
+    def startGame = {
+        game = game.startGame
         notifyObservers(Event.Start)
     }
 
@@ -30,7 +35,12 @@ case class Controller(var game: Game) extends Observable {
     def standNextPlayer = {
         game = game.stand
         notifyObservers(Event.standNextPlayer)
-    } 
+    }
+
+    def bet(amount:Int) = {
+        game = game.bet(amount)
+        notifyObservers(Event.bet)
+    }
 
     def exit(): Unit = {
         sys.exit(0)

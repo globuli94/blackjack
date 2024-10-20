@@ -15,11 +15,13 @@ class Tui(controller:Controller) extends Observer {
       case "add" =>
         controller.addPlayer(splitInput(1))
       case "start" =>
-        controller.initializeGame
+        controller.startGame
       case "hit" =>
         controller.hitNextPlayer
       case "stand" =>
         controller.standNextPlayer
+      case "bet" =>
+        controller.bet(splitInput(1).toInt)
       case "exit" =>
         controller.exit()
       case _
@@ -36,6 +38,7 @@ class Tui(controller:Controller) extends Observer {
       case Event.Start => println(controller.toString)
       case Event.hitNextPlayer => println(controller.toString)
       case Event.standNextPlayer => println(controller.toString)
+      case Event.bet => println(controller.toString) 
       case Event.invalidCommand => println("Invalid Command")
       case _ => ???
     }

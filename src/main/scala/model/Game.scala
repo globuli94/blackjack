@@ -4,17 +4,30 @@ import scala.compiletime.ops.string
 import scala.collection.immutable.LazyList.cons
 import scala.annotation.constructorOnly
 
+enum GameState { case Initialized, Betting, Started}
 
-case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer()) {
+
+case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) {
 
     def getPlayerOptions: List[String] = {
-        val player = queue.head
-        var options = List("Stand")
+        
+        var options: List[String]= List()
 
-        if (player.hand.canHit) options = "Hit" :: options
-        if (player.hand.canDoubleDown) options = "Double Down" :: options
-        if (player.hand.canSplit) options = "Split" :: options
-
+        if(state == GameState.Initialized) {
+            options = "add <player>" :: options
+            options = "start round" :: options
+        } else if(state == GameState.Betting) {
+            options =  "bet <amount>" :: options
+            options = "leave table" :: options
+        } else if (state == GameState.Started){
+            options = "Stand" :: options
+            val player = queue.head
+        
+            if (player.hand.canHit) options = "Hit" :: options
+            if (player.hand.canDoubleDown) options = "Double Down" :: options
+            if (player.hand.canSplit) options = "Split" :: options
+        }
+        
         return options
     }
 
@@ -23,10 +36,31 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
         println(deck.deck.length)
     }
 
+    def startGame:Game = {
+        val game_with_shuffled_cards = copy(deck = deck.shuffle, state = GameState.Betting)        
+        
+        val length = game_with_shuffled_cards.queue.length
+        val this_queue = game_with_shuffled_cards.queue
+        
+        for(i <- 0 until length) {
+            val player = game_with_shuffled_cards.queue.dequeue()
+            game_with_shuffled_cards.queue.enqueue(player.copy(state = PlayerState.Betting))
+        }
+
+        game_with_shuffled_cards.evaluate
+    }
+
     def evaluate: Game = {
         val any_playing = queue.exists(player => player.state == PlayerState.Playing)
+        
+        val any_betting = queue.exists(player => player.state == PlayerState.Betting)
 
-        if(!any_playing) {
+        if(!any_betting && state == GameState.Betting) {
+
+            dealCards.copy(state = GameState.Started)
+
+        } else if(!any_playing && state == GameState.Started) {
+            
             finishDealer
             
             println("EVALUATING ROUND")
@@ -59,32 +93,23 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
                     case _ =>
                 }
             }
-            Game(queue = queue, deck = new Deck(), dealer = new Dealer())
+            Game(queue = queue, deck = new Deck(), dealer = new Dealer(), state = GameState.Initialized)
         } else {
             this
         }        
     }
     
-    def deal: Game = {
-        val game_with_shuffled_cards = copy(deck = deck.shuffle)
-        val length = game_with_shuffled_cards.queue.length
 
-        for(i <- 1 to length) {
-            val player = queue.dequeue()
-            queue.enqueue(player.copy(state = PlayerState.Betting))
-        }
-        
-        game_with_shuffled_cards.dealInitialCards
-    }
-    
     def createPlayer(name:String): Game = {
         this.copy(queue = queue.enqueue(Player(name)))
     }
 
-    def dealInitialCards: Game = {
+    def dealCards: Game = {
+        val game_with_shuffled_cards = copy(deck = deck.shuffle, state = GameState.Started)        
+
         val dealer_hand = Hand().addCard(deck.draw())
 
-        queue.foreach( player =>
+        game_with_shuffled_cards.queue.foreach( player =>
             val player = queue.dequeue()
             val first_card = deck.draw()
             val second_card = deck.draw()
@@ -92,10 +117,11 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
             val first_hand = player.hand.addCard(first_card)
             val second_hand = first_hand.addCard(second_card)
 
-            queue.enqueue(player.copy(hand = second_hand))
+            game_with_shuffled_cards.queue.enqueue(player.copy(hand = second_hand, state = PlayerState.Playing))
         )
 
-        copy(queue, deck, Dealer(dealer_hand))
+        game_with_shuffled_cards.copy(deck = deck, dealer = Dealer(dealer_hand))
+        
     }
 
     def hit: Game = {
@@ -121,14 +147,19 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
     }
 
     def stand: Game = {
-        val player = queue.dequeue().copy(state = PlayerState.Standing)
-        
-        println(queue)
-        println(player)
+        val player = queue.dequeue()
+        queue.enqueue(player.copy(state = PlayerState.Standing))
+        copy(queue, deck).evaluate
+    }
 
-        queue.enqueue(player)
+    def bet(amount: Int): Game = {
+        val player = queue.dequeue()
 
-        println(queue)
+        val bet = amount
+        val new_money = player.money - bet
+
+        queue.enqueue(player.copy(money = new_money, bet = bet, state = PlayerState.Playing))
+
         copy(queue, deck).evaluate
     }
 
@@ -142,7 +173,7 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
 
     override def toString(): String = {
         // clear console
-        //println("\u001b[H\u001b[2J")
+        println("\u001b[H\u001b[2J")
 
         val stringBuilder = new StringBuilder()
 
