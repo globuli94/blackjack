@@ -10,7 +10,6 @@ enum GameState { case Initialized, Betting, Started, Evaluated}
 case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) {
 
     def getPlayerOptions: List[String] = {
-        
         var options: List[String]= List()
 
         if(state == GameState.Initialized) {
@@ -33,16 +32,6 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
         return options
     }
 
-    def hitDealer: Game = {
-        if(dealer.hand.value < 17) {
-            val new_hand = dealer.hand.addCard(deck.draw())
-            val new_dealer = dealer.copy(hand = new_hand)
-            copy(dealer = new_dealer).evaluate
-        } else {
-            copy(dealer = dealer.copy(state = DealerState.Standing)).evaluate
-        }
-    }
-
     def startGame:Game = {
         val game_with_shuffled_cards = copy(deck = deck.shuffle, state = GameState.Betting)        
         
@@ -57,50 +46,45 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
         game_with_shuffled_cards.evaluate
     }
 
-    // game logic
+    // game logic // everytime a move is made (hit, stand, bet, etc) the game is evaluated depending on the game state
     def evaluate: Game = {
-        val any_playing = queue.exists(player => player.state == PlayerState.Playing)
-        val any_betting = queue.exists(player => player.state == PlayerState.Betting)
+    val any_playing = queue.exists(player => player.state == PlayerState.Playing)
+    val any_betting = queue.exists(player => player.state == PlayerState.Betting)
 
-        if(!any_betting && state == GameState.Betting) {
-            dealCards.copy(state = GameState.Started)
-        } else if(!any_playing && state == GameState.Started) {
-            if(dealer.state != DealerState.Standing || dealer.state != DealerState.Bust) {
-                hitDealer
-            } else {
-                val length = queue.length
-                for(i <- 0 until length) {
-                    val player = queue.dequeue()
-
-                    player.state match {
-                        case PlayerState.Blackjack =>
-                            val player_money = player.money + player.bet + player.bet * 1.5
-                            queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = PlayerState.WON))
-                        case PlayerState.Standing =>
-                            var player_money:Double = 0
-                            var player_state: PlayerState = PlayerState.LOST
-
-                            if(dealer.hand.value > player.hand.value) {
-                                player_money = player.money - player.bet
-                            } else {
-                                player_money = player.money + player.bet * 2
-                                player_state = PlayerState.WON
-                            }
-                            
-                            queue.enqueue(player.copy(money = player_money, hand = Hand(), bet = 0, state = player_state))
-                        case PlayerState.Busted =>                        
-                            queue.enqueue(player.copy(hand = Hand(), bet = 0, state = PlayerState.LOST))
-                        case _ =>
-                    }
-                }
-                Game(queue = queue, deck = new Deck(), dealer = new Dealer(), state = GameState.Evaluated)
-            }
+    if (!any_betting && state == GameState.Betting) {
+        dealCards.copy(state = GameState.Started)
+    } else if (!any_playing && state == GameState.Started) {
+        if (dealer.state != DealerState.Standing && dealer.state != DealerState.Bust) {
+            hitDealer.evaluate
         } else {
-            this
-        }        
+            // All players have played, and dealer is standing/busted, evaluate each player
+            val evaluatedQueue = queue.map { player =>
+                player.state match {
+                    case PlayerState.Blackjack =>
+                        if (dealer.hand.hasBlackjack) {
+                            player.copy(money = player.money + player.bet + player.bet * 1.5, bet = 0, state = PlayerState.WON)
+                        } else {
+                            player.copy(bet = 0, state = PlayerState.LOST)
+                        }
+                    case PlayerState.Standing =>
+                        if (dealer.hand.value > player.hand.value) {
+                            player.copy(bet = 0, state = PlayerState.LOST)
+                        } else {
+                            player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
+                        }
+                    case PlayerState.Busted =>
+                        player.copy(bet = 0, state = PlayerState.LOST)
+                    case _ => player
+                }
+            }
+            Game(queue = evaluatedQueue, dealer = dealer, state = GameState.Evaluated)
+        }
+    } else {
+        this
     }
-    
+}
 
+    
     def createPlayer(name:String): Game = {
         this.copy(queue = queue.enqueue(Player(name)))
     }
@@ -123,6 +107,16 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
 
         game_with_shuffled_cards.copy(deck = deck, dealer = Dealer(dealer_hand))
         
+    }
+
+    def hitDealer: Game = {
+        if(dealer.hand.value < 17) {
+            val new_hand = dealer.hand.addCard(deck.draw())
+            val new_dealer = dealer.copy(hand = new_hand)
+            copy(dealer = new_dealer, deck = deck).evaluate
+        } else {
+            copy(dealer = dealer.copy(state = DealerState.Standing))
+        }
     }
 
     def hit: Game = {
@@ -164,13 +158,9 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
         copy(queue, deck).evaluate
     }
 
-
-
-
-
-
-
-
+    def isValidBet(amount: Int): Boolean = {
+        amount <= queue.front.money
+    }
 
     override def toString(): String = {
         // clear console
@@ -188,12 +178,12 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
 
         var dealer_hand_line: String = ""
         if(dealer.hand.hand.length == 1) {
-            dealer_hand_line = f"| [* *] ${dealer.hand.toString()}%-22s|" // Align left
+            dealer_hand_line = f"| [* *] ${dealer.hand.toString()}%-25s|" // Align left
         } else {
-            dealer_hand_line = f"| Hand: ${dealer.hand.toString()}%-22s |" // Align left
+            dealer_hand_line = f"| Hand: ${dealer.hand.toString()}%-25s |" // Align left
         }
         
-        val dealer_value_line = f"| Value: ${dealer.hand.value}%-22s|" // Align left
+        val dealer_value_line = f"| Value: ${dealer.hand.value}%-25s|" // Align left
 
         stringBuilder.append(            
             s"""
@@ -248,6 +238,7 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
 
         stringBuilder.append("Options: ")
         getPlayerOptions.foreach(option => stringBuilder.append(s"\t$option"))
+        stringBuilder.append(state, dealer)
         stringBuilder.append("\n")
         
         stringBuilder.append("-------------------------------------------------\n")
