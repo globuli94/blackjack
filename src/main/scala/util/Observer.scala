@@ -16,7 +16,10 @@ enum Event {
   case AddPlayer
   case hitNextPlayer
   case standNextPlayer
+  case doubleDown
   case bet
+  case continue
+  case leavePlayer
   case invalidCommand
   case invalidBet
   case End

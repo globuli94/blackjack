@@ -16,12 +16,18 @@ class Tui(controller:Controller) extends Observer {
         controller.addPlayer(splitInput(1))
       case "start" =>
         controller.startGame
+      case "continue" =>
+        controller.startGame
       case "hit" =>
         controller.hitNextPlayer
       case "stand" =>
         controller.standNextPlayer
+      case "double" =>
+        controller.doubleDown
       case "bet" =>
-          controller.bet(splitInput(1))
+        controller.bet(splitInput)
+      case "leave" =>
+        controller.leavePlayer
       case "exit" =>
         controller.exit()
       case _
@@ -39,6 +45,9 @@ class Tui(controller:Controller) extends Observer {
       case Event.hitNextPlayer => println(controller.toString)
       case Event.standNextPlayer => println(controller.toString)
       case Event.bet => println(controller.toString) 
+      case Event.continue => println(controller.toString)
+      case Event.doubleDown => println(controller.toString)
+      case Event.leavePlayer => println(controller.toString)
       case Event.invalidCommand => println("Error: Invalid Command")
       case Event.invalidBet => println("Error: Insufficent Funds")
       case _ => ???
