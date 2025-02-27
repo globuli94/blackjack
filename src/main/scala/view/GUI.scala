@@ -1,6 +1,6 @@
 package view
 import util.{Event, Observer}
-import controller.Controller_v2
+import controller.Controller
 import util.Event.{AddPlayer, End, Split}
 
 import scala.swing.*
@@ -10,7 +10,7 @@ import javax.swing.BorderFactory
 import scala.swing.MenuBar.NoMenuBar.revalidate
 
 
-class GUI(controller: Controller_v2) extends Frame with Observer {
+class GUI(controller: Controller) extends Frame with Observer {
   controller.add(this)
 
   preferredSize = new Dimension(900, 600)

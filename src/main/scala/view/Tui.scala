@@ -1,10 +1,10 @@
 package view
-import controller.{Controller, Controller_v2}
+import controller.Controller
 import util.{Event, Observer}
 
 import scala.util.{Failure, Success, Try}
 
-class TUI(controller:Controller_v2) extends Observer {
+class TUI(controller:Controller) extends Observer {
   controller.add(this)
 
   def getInputAndPrintLoop(input:String): Unit =

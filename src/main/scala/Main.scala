@@ -1,5 +1,5 @@
-import model.{Game, Game_v2}
-import controller.{Controller, Controller_v2}
+import model.Game
+import controller.Controller
 import view.{GUI, TUI}
 
 import scala.collection.immutable.LazyList.cons
@@ -7,8 +7,8 @@ import scala.io.StdIn.readLine
 
 object Main {
 
-  private val game: Game_v2 = Game_v2()
-  private val controller: Controller_v2 = Controller_v2(game)
+  private val game: Game = Game()
+  private val controller: Controller = Controller(game)
   private val tui: TUI = TUI(controller)
   private val gui: GUI = GUI(controller)
 
