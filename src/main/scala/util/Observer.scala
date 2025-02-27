@@ -5,18 +5,20 @@ trait Observer {
 }
 
 trait Observable {
-  var subscribers: Vector[Observer] = Vector()
-  def add(s: Observer) = subscribers = subscribers :+ s
+  private var subscribers: Vector[Observer] = Vector()
+  def add(s: Observer): Unit = subscribers = subscribers :+ s
   //def remove(s: Observer) = subscribers = subscribers.filterNot(o => o == s)
-  def notifyObservers(e: Event) = subscribers.foreach(o => o.update(e))
+  def notifyObservers(e: Event): Unit = subscribers.foreach(o => o.update(e))
 }
 
 enum Event {
+  case Create
   case Start
   case AddPlayer
   case hitNextPlayer
   case standNextPlayer
   case doubleDown
+  case Split
   case bet
   case continue
   case leavePlayer

@@ -1,8 +1,13 @@
 package model
 
+enum HandSate {
+    case Play
+    case Stand
+}
+
 // handles adding cards to hand and value logic -> bust, blackjack
 
-case class Hand (hand: List[Card] = List.empty) {
+case class Hand (hand: List[Card] = List.empty, state: HandSate = HandSate.Play) {
 
     def addCard(card: Card): Hand = {
         return Hand(card :: hand)

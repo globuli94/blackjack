@@ -1,8 +1,9 @@
 package model;
-import scala.collection.mutable.Queue;
+import scala.collection.mutable.Queue
 import scala.compiletime.ops.string
 import scala.collection.immutable.LazyList.cons
 import scala.annotation.constructorOnly
+import scala.collection.mutable
 
 enum GameState { case Initialized, Betting, Started, Evaluated}
 
@@ -12,15 +13,16 @@ enum GameState { case Initialized, Betting, Started, Evaluated}
 // Evaluated ->
 
 
-case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) {
+case class Game(queue: mutable.Queue[Player] = mutable.Queue.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) {
 
     def getPlayerOptions: List[String] = {
         var options: List[String]= List()
+        options = "exit" :: options
+
 
         if(state == GameState.Initialized) {
-            options = "exit" :: options
             options = "add <player>" :: options
-            if(!queue.isEmpty) {
+            if(queue.nonEmpty) {
                 options = "start" :: options
             }
         } else if(state == GameState.Betting) {
@@ -36,7 +38,6 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
             if (player.hand.canDoubleDown && player.money >= player.bet) options = "double (down)" :: options
             //if (player.hand.canSplit) options = "split" :: options
         } else if(state == GameState.Evaluated) {
-            options = "exit" :: options
             options = "add <player>" :: options
             options = "continue" :: options
         }
@@ -189,6 +190,18 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
         this.copy(queue = queue.prepend(player.copy(bet = bet, money = money, state = PlayerState.DoubledDown))).hit
     }
 
+    def split: Game = {
+        val player = queue.dequeue()
+        val hand = player.hand
+
+        val split_hand_1 = Hand(List(hand.hand(0), deck.draw()))
+        val split_hand_2 = Hand(List(hand.hand(1), deck.draw()))
+        
+        val hand_list = List(split_hand_1, split_hand_2)
+
+        this.copy(queue = queue.prepend(player.copy(hand = Hand(), state = PlayerState.Split)))
+    }
+
     def bet(amount: Int): Game = {
         val player = queue.dequeue()
 
@@ -244,7 +257,7 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
             }
             } " // Align left
 
-        if(!dealer.hand.hand.isEmpty) {
+        if(dealer.hand.hand.nonEmpty) {
             stringBuilder.append(            
                 s"""
                     $dealer_hand_line\n
@@ -314,7 +327,6 @@ case class Game(queue: Queue[Player] = Queue.empty, deck: Deck = new Deck(), dea
                 $box_bottom
                 """
             }
-
         }
 
             // Concatenate box lines into a complete box for this player

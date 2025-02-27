@@ -1,10 +1,10 @@
 package view
-import controller.Controller
-
+import controller.{Controller, Controller_v2}
 import util.{Event, Observer}
+
 import scala.util.{Failure, Success, Try}
 
-class Tui(controller:Controller) extends Observer {
+class TUI(controller:Controller_v2) extends Observer {
   controller.add(this)
 
   def getInputAndPrintLoop(input:String): Unit =
@@ -15,19 +15,19 @@ class Tui(controller:Controller) extends Observer {
       case "add" =>
         controller.addPlayer(splitInput(1))
       case "start" =>
-        controller.startGame
+        controller.startGame()
       case "continue" =>
-        controller.startGame
+        controller.startGame()
       case "hit" =>
-        controller.hitNextPlayer
+        controller.hitNextPlayer()
       case "stand" =>
-        controller.standNextPlayer
+        controller.standNextPlayer()
       case "double" =>
-        controller.doubleDown
+        controller.doubleDown()
       case "bet" =>
         controller.bet(splitInput)
       case "leave" =>
-        controller.leavePlayer
+        controller.leavePlayer()
       case "exit" =>
         controller.exit()
       case _
@@ -50,6 +50,7 @@ class Tui(controller:Controller) extends Observer {
       case Event.leavePlayer => println(controller.toString)
       case Event.invalidCommand => println("Error: Invalid Command")
       case Event.invalidBet => println("Error: Insufficent Funds")
+      case Event.Create =>
       case _ => ???
     }
 }
