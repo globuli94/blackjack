@@ -274,7 +274,6 @@ case class Game_v2(current_idx: Int = 0, players: List[Player] = List.empty, dec
     val stringBuilder = new StringBuilder()
 
     // Dealer Box Centered
-    val boxWidth = 30
     val dealerHand = if (dealer.hand.hand.length == 1) f"[* *] ${dealer.hand.toString()}" else f" ${dealer.hand.toString()} "
     val dealerValue = f"Value: ${
       if (dealer.hand.isBust) "Busted"
@@ -286,8 +285,10 @@ case class Game_v2(current_idx: Int = 0, players: List[Player] = List.empty, dec
       val padding = (width - text.length) / 2
       " " * padding + text + " " * padding
     }
+    val dealer_string = "---------------------- Dealer ------------------------\n"
+    val boxWidth = dealer_string.length
 
-    stringBuilder.append(s"${centerText("------ Dealer ------", boxWidth)}\n")
+    stringBuilder.append(s"${centerText(dealer_string, boxWidth)}\n")
     stringBuilder.append(s"${centerText(dealerHand, boxWidth)}\n")
     stringBuilder.append(s"${centerText(dealerValue, boxWidth)}\n\n")
 

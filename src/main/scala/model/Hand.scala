@@ -16,10 +16,10 @@ case class Hand (hand: List[Card] = List.empty, state: HandSate = HandSate.Play)
     def value: Int = {
         val values = hand.map(_.value)
         val totalValue = values.sum
-        if (totalValue > 21 && hand.exists(_.rank == "Ace")) {
-        totalValue - 10 // Count Ace as 1 if total exceeds 21
+        if (totalValue > 21 && hand.exists(_.rank == "A")) {
+            totalValue - 10 // Count Ace as 1 if total exceeds 21
         } else {
-        totalValue
+            totalValue
         }
     }
 
