@@ -84,11 +84,11 @@ case class Controller(var game: Game) extends Observable {
   }
    */
 
-  def bet(amount: Array[String]): Unit = {
-    if (game.state == GameState.Betting && amount.length == 2) {
+  def bet(amount: String): Unit = {
+    if (game.state == GameState.Betting) {
       try {
-        if (game.isValidBet(amount(1).toInt) && amount(1).toInt > 0) {
-          game = game.betPlayer(amount(1).toInt)
+        if (game.isValidBet(amount.toInt) && amount.toInt > 0) {
+          game = game.betPlayer(amount.toInt)
           notifyObservers(Event.bet)
         } else {
           notifyObservers(Event.invalidBet)

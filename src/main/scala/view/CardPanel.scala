@@ -19,10 +19,13 @@ class CardPanel(card: Card, scalePercent: Double = 0.5) extends Label {
       case "Q" => "Queen"
       case "K" => "King"
       case "A" => "Ace"
+      case "blank" => "back"
       case _ => card.rank
     }
 
-  val path: String = s"src/main/resources/deck_pngs/$suit$rank.png"
+  val path: String =
+    if(card.rank == "blank") s"src/main/resources/deck_pngs/back.png" else s"src/main/resources/deck_pngs/$suit$rank.png"
+
 
   // Function to resize image by percentage
   private def resizeImage(path: String, scale: Double): ImageIcon = {

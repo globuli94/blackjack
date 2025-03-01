@@ -7,7 +7,7 @@ case class Player(
                    name: String,
                    hand: Hand = Hand(),
                    split_hand: List[Hand] = List(),
-                   money: Double = 1000,
-                   bet: Double = 0,
+                   money: Int = 1000,
+                   bet: Int = 0,
                    state: PlayerState = PlayerState.Idle
                  )

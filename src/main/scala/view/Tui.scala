@@ -25,7 +25,7 @@ class TUI(controller:Controller) extends Observer {
       case "double" =>
         controller.doubleDown()
       case "bet" =>
-        controller.bet(splitInput)
+        controller.bet(splitInput(1))
       case "leave" =>
         controller.leavePlayer()
       case "exit" =>

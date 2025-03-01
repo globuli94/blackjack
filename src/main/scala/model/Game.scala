@@ -9,7 +9,11 @@ enum GameState {
 case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) {
 
   def createPlayer(name: String): Game = {
-    this.copy(players = Player(name) :: players)
+    if (players.length < 4) {
+      this.copy(players = Player(name) :: players)
+    } else {
+      this
+    }
   }
 
   def leavePlayer(name: String = ""): Game = {
