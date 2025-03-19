@@ -1,7 +1,7 @@
 package view
 
 import model.{Card, Dealer}
-import model.DealerState.{Bust, Dealing, Idle}
+import model.DealerState.{Bust, Dealing, Idle, Standing}
 
 import java.awt.Color
 import java.net.URL
@@ -58,18 +58,25 @@ class DealerPanel(dealer: Dealer) extends BoxPanel(Orientation.Vertical) {
   private val dealer_stat_panel: BoxPanel = new BoxPanel(Orientation.Vertical) {
     background = poolTableGreen
 
+    contents += Swing.HStrut(10)
+
     contents += new BoxPanel(Orientation.Horizontal) {
       background = poolTableGreen
       val state_label: Label =
-        if (dealer.state != Bust)
+        if (dealer.hand.hasBlackjack)
+          Label(s"BLACKJACK - ${dealer.hand.value}")
+        else if (dealer.state == Bust)
+          Label(s"${dealer.state} - ${dealer.hand.value}")
+        else if(dealer.state != Bust)
           Label(s"Value: ${dealer.hand.value}")
         else
-          Label(s"${dealer.state}")
+          Label()
       state_label.font = player_font
       state_label.foreground = Color.WHITE
 
       contents += state_label
     }
+    contents += Swing.HStrut(10)
   }
 
   contents += new BorderPanel {

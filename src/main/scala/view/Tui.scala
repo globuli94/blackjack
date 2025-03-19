@@ -51,6 +51,7 @@ class TUI(controller:Controller) extends Observer {
       case Event.invalidCommand => println("Error: Invalid Command")
       case Event.invalidBet => println("Error: Insufficent Funds")
       case Event.Create =>
+      case Event.errPlayerNameExists => println("Error: Player name already exists")
       case _ => ???
     }
 }

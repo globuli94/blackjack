@@ -27,7 +27,7 @@ case class Hand (hand: List[Card] = List.empty, state: HandSate = HandSate.Play)
     def hasBlackjack: Boolean = value == 21
     
     def canHit: Boolean = value < 21
-    def canDoubleDown: Boolean = value == 9 || value == 10 || value == 11
+    def canDoubleDown: Boolean = (value == 9 || value == 10 || value == 11) && hand.length == 2
     def canSplit: Boolean = hand.size == 2 && hand.head.rank == hand(1).rank
 
     override def toString: String = {

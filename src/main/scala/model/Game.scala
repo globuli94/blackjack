@@ -10,17 +10,18 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
 
   def createPlayer(name: String): Game = {
     if (players.length < 4) {
-      this.copy(players = Player(name) :: players)
+      this.copy(players = Player(name) :: players).evaluate
     } else {
       this
     }
   }
 
   def leavePlayer(name: String = ""): Game = {
+    val idx = if (current_idx == players.length - 1) 0 else current_idx
     if(name.trim.isEmpty) {
-      copy(players = players.patch(current_idx, Nil, 1))
+      copy(players = players.patch(current_idx, Nil, 1), current_idx = idx).evaluate
     } else {
-      copy(players = players.filterNot(_.name == name))
+      copy(players = players.filterNot(_.name == name), current_idx = idx).evaluate
     }
   }
 
@@ -80,8 +81,6 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
           PlayerState.Busted
         } else if (new_player_hand.hasBlackjack) {
           PlayerState.Blackjack
-        } else if (player.state == PlayerState.DoubledDown){
-          PlayerState.DoubledDown
         } else {
           PlayerState.Playing
         }
@@ -160,14 +159,18 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
         val new_bet = player.bet * 2
         val new_balance = player.money - player.bet
 
+        val (card, new_deck) = deck.draw()
+        val new_player_hand = player.hand.addCard(card)
+
         val updated_players: List[Player] = players.map({
           p => {
-            if (p == player) p.copy(money = new_balance, bet = new_bet, state = PlayerState.DoubledDown) else p
+            if (p == player) p.copy(hand = new_player_hand, money = new_balance, bet = new_bet, state = PlayerState.DoubledDown) else p
           }
         })
         copy(
           players = updated_players,
-          current_idx = if(current_idx == players.length - 1) current_idx else current_idx + 1
+          current_idx = if(current_idx == players.length - 1) current_idx else current_idx + 1,
+          deck = new_deck
         ).evaluate
       case None => this
     }
@@ -182,7 +185,8 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     copy(
       players = updated_players,
       state = GameState.Betting,
-      current_idx = 0
+      current_idx = 0,
+      dealer = Dealer()
     ).evaluate
   }
 
@@ -212,7 +216,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
                   player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
                 }
               case PlayerState.DoubledDown =>
-                if(dealer.hand.value > player.hand.value) {
+                if(dealer.hand.value > player.hand.value && !dealer.hand.isBust) {
                   player.copy(bet = 0, state = PlayerState.LOST)
                 } else if (dealer.hand.value == player.hand.value) {
                   player.copy(money = player.money + player.bet, bet = 0, state = PlayerState.Idle)
@@ -298,6 +302,8 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     stringBuilder.append(s"${centerText(dealer_string, boxWidth)}\n")
     stringBuilder.append(s"${centerText(dealerHand, boxWidth)}\n")
     stringBuilder.append(s"${centerText(dealerValue, boxWidth)}\n\n")
+
+    stringBuilder.append(s"State: ${state}\n")
 
     // Player Table Header
     stringBuilder.append("---------------------- Table -------------------------\n")

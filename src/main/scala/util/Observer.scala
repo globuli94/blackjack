@@ -25,4 +25,5 @@ enum Event {
   case invalidCommand
   case invalidBet
   case End
+  case errPlayerNameExists
 }

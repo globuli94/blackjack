@@ -1,6 +1,7 @@
 package controller
 
 import model.{Game, GameState}
+import util.Event.invalidCommand
 import util.{Event, Observable, Observer}
 
 case class Controller(var game: Game) extends Observable {
@@ -21,23 +22,23 @@ case class Controller(var game: Game) extends Observable {
 
   def addPlayer(name: String): Unit = {
     if (game.state == GameState.Initialized || game.state == GameState.Evaluated) {
-      game = game.createPlayer(name)
-      notifyObservers(Event.AddPlayer)
+      if(game.players.exists(_.name == name)) {
+        notifyObservers(Event.errPlayerNameExists)
+      } else {
+        game = game.createPlayer(name)
+        notifyObservers(Event.AddPlayer)
+      }
     } else {
       notifyObservers(Event.invalidCommand)
     }
   }
 
   def leavePlayer(): Unit = {
-    if ((game.state == GameState.Betting || game.state == GameState.Initialized)) {
-      if (game.players.length == 1) {
-        exit();
-      } else {
+    if(game.players.nonEmpty) {
         game = game.leavePlayer()
         notifyObservers(Event.leavePlayer)
-      }
     } else {
-      notifyObservers(Event.invalidCommand)
+      notifyObservers(invalidCommand)
     }
   }
 
@@ -71,18 +72,6 @@ case class Controller(var game: Game) extends Observable {
       notifyObservers(Event.invalidBet)
     }
   }
-
-  /*
-  def split(): Unit = {
-    val player = game.players(game.current_idx)
-    if (game.state == GameState.Started && player.hand.canSplit && player.bet <= player.money) {
-      game = game.split
-      notifyObservers(Event.Split)
-    } else {
-      notifyObservers(Event.invalidCommand)
-    }
-  }
-   */
 
   def bet(amount: String): Unit = {
     if (game.state == GameState.Betting) {

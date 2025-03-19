@@ -1,6 +1,6 @@
 package view
 
-import model.PlayerState.{Playing, Standing}
+import model.PlayerState.{Betting, Idle, Playing, Standing}
 import model.{Card, Hand, Player}
 import view.CardPanel
 
@@ -98,11 +98,13 @@ class PlayerPanel(player: Player, active: Boolean) extends BoxPanel(Orientation.
       background = poolTableGreen
       val state_label: Label =
         if(player.state == Playing)
-          Label(s"Value: ${player.hand.value}")
+          if(player.hand.hand.nonEmpty) Label(s"Value: ${player.hand.value}") else Label()
         else if(player.state == Standing)
           Label(s"Standing on: ${player.hand.value}")
+        else if(player.state == Betting || player.state == Idle )
+          Label("")
         else
-          Label(s"${player.state}")
+          Label(s"${player.state} ${player.hand.value}")
       state_label.font = player_font
       state_label.foreground = Color.WHITE
 
