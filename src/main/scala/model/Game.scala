@@ -1,5 +1,6 @@
 package model
 
+import model.DealerState.Standing
 import model.PlayerState.{Betting, Playing}
 
 enum GameState {
@@ -18,7 +19,10 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
 
   def leavePlayer(name: String = ""): Game = {
     val idx = if (current_idx == players.length - 1) 0 else current_idx
-    if(name.trim.isEmpty) {
+
+    if(players.length == 1) {
+      Game()
+    } else if(name.trim.isEmpty) {
       copy(players = players.patch(current_idx, Nil, 1), current_idx = idx).evaluate
     } else {
       copy(players = players.filterNot(_.name == name), current_idx = idx).evaluate
@@ -26,7 +30,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
   // performs the initial deal -> dealer 1 card, all players 2 cards, player state set to playing
-  private def deal: Game = {
+  def deal: Game = {
     val shuffled_deck = deck.shuffle
 
     val (card, deck_after_dealer) = shuffled_deck.draw()
@@ -41,11 +45,11 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
         // Add cards to player's hand
         val updatedHand = player.hand.addCard(first_card).addCard(second_card)
 
-        // Update player's state based on hand
+        // Update player's state to playing
         val updatedPlayer =
           player.copy(
             hand = updatedHand,
-            state = if (updatedHand.hasBlackjack) PlayerState.Blackjack else PlayerState.Playing
+            state = PlayerState.Playing
           )
 
         // Accumulate the updated player and deck for the next iteration
@@ -57,16 +61,9 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
 
   // hits dealer if possible, else changes dealers state to bust or standing
   def hitDealer: Game = {
-    if(dealer.hand.value < 17) {
       val (card, new_deck) = deck.draw()
-      val new_dealer_hand = dealer.hand.addCard(card)
-      val new_dealer = dealer.copy(hand = new_dealer_hand)
-      copy(dealer = new_dealer, deck = new_deck)
-    } else if(dealer.hand.isBust) {
-      copy(dealer = dealer.copy(state = DealerState.Bust))
-    } else {
-      copy(dealer = dealer.copy(state = DealerState.Standing))
-    }
+      val new_dealer = dealer.copy(hand = dealer.hand.addCard(card))
+      copy(dealer = new_dealer, deck = new_deck).evaluate
   }
 
   // hits current player and sets player state to blackjack playing or busted, updates deck
@@ -76,30 +73,22 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
       val (card, new_deck) = deck.draw()
       val new_player_hand = player.hand.addCard(card)
 
-      val new_player_state: PlayerState =
-        if (new_player_hand.isBust) {
-          PlayerState.Busted
-        } else if (new_player_hand.hasBlackjack) {
-          PlayerState.Blackjack
-        } else {
-          PlayerState.Playing
-        }
-
       val updated_players: List[Player] = players.map({
         p => {
           if(p == player) p.copy(
             hand = new_player_hand,
-            state = new_player_state) else p
+          ) else p
         }
       })
+
       copy(
         players = updated_players,
         deck = new_deck,
         current_idx =
-          if (new_player_state == PlayerState.Playing) {
-            current_idx
+          if (new_player_hand.isBust || new_player_hand.hasBlackjack) {
+            if (current_idx == players.length - 1) current_idx else current_idx + 1
           } else {
-            if(current_idx == players.length - 1) current_idx else current_idx + 1
+            current_idx
           }
       ).evaluate
     case None => this
@@ -116,10 +105,9 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
           }
         })
 
-        copy(
-          players = updated_players,
-          current_idx = if(current_idx == players.length - 1) current_idx else current_idx + 1
-        ).evaluate
+        val next_idx = (current_idx + 1) % players.length
+        copy(players = updated_players, current_idx = next_idx).evaluate
+
       case None => this
     }
   }
@@ -152,7 +140,6 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     }
   }
 
-  //
   def doubleDownPlayer: Game = {
     players.lift(current_idx) match {
       case Some(player) =>
@@ -191,51 +178,55 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
   def evaluate: Game = {
-    val any_playing = players.exists(_.state == PlayerState.Playing)
-    val any_betting = players.exists(_.state == PlayerState.Betting)
+    // Evaluate player states
+    val evaluated_players: List[Player] = players.map {
+      case player if player.state == PlayerState.Standing => player
+      case player if player.hand.isBust => player.copy(state = PlayerState.Busted)
+      case player if player.hand.hasBlackjack => player.copy(state = PlayerState.Blackjack)
+      case player => player
+    }
 
-    if (!any_betting && state == GameState.Betting) { // if betting done -> deal
-      deal.evaluate
-    } else if (!any_playing && state == GameState.Started) { // if all standing or blackjack -> evaluate hands
-      if (dealer.state != DealerState.Standing && dealer.state != DealerState.Bust) {
-        hitDealer.evaluate
-      } else {
-        val evaluated_players: List[Player] =
-          players.map { player =>
-            player.state match {
-              case PlayerState.Blackjack =>
-                if (dealer.hand.hasBlackjack) {
-                  player.copy(bet = 0, state = PlayerState.LOST)
-                } else {
-                  player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
-                }
-              case PlayerState.Standing =>
-                if (dealer.hand.value >= player.hand.value && !dealer.hand.isBust) {
-                  player.copy(bet = 0, state = PlayerState.LOST)
-                } else {
-                  player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
-                }
-              case PlayerState.DoubledDown =>
-                if(dealer.hand.value > player.hand.value && !dealer.hand.isBust) {
-                  player.copy(bet = 0, state = PlayerState.LOST)
-                } else if (dealer.hand.value == player.hand.value) {
-                  player.copy(money = player.money + player.bet, bet = 0, state = PlayerState.Idle)
-                } else {
-                  player.copy(money = player.money + player.bet *2, bet = 0, state = PlayerState.WON)
-                }
-              case PlayerState.Busted =>
-                player.copy(bet = 0, state = PlayerState.LOST)
-              case _ => player
-            }
+    val evaluated_dealer: Dealer = dealer match {
+      case d if d.hand.isBust => d.copy(state = DealerState.Bust)
+      case d if d.hand.value >= 17 => d.copy(state = DealerState.Standing)
+      case _ => dealer
+    }
+
+    val any_playing = evaluated_players.exists(_.state == PlayerState.Playing)
+    val any_betting = evaluated_players.exists(_.state == PlayerState.Betting)
+
+    state match {
+      case GameState.Betting if !any_betting => deal.evaluate
+
+      case GameState.Started if any_playing => copy(players = evaluated_players)
+
+      case GameState.Started if !any_playing && evaluated_dealer.state != DealerState.Standing && evaluated_dealer.state != DealerState.Bust =>
+        copy(dealer = evaluated_dealer).hitDealer.evaluate // Ensure evaluation continues after hitting dealer
+
+      case GameState.Started if !any_playing && (evaluated_dealer.state == DealerState.Bust || evaluated_dealer.state == DealerState.Standing) =>
+        val evaluated_players_bets = evaluated_players.map { player =>
+          player.state match {
+            case PlayerState.Blackjack if dealer.hand.hasBlackjack =>
+              player.copy(bet = 0, state = PlayerState.LOST)
+            case PlayerState.Blackjack =>
+              player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
+            case PlayerState.Standing | PlayerState.DoubledDown if dealer.hand.value >= player.hand.value && !dealer.hand.isBust =>
+              player.copy(bet = 0, state = PlayerState.LOST)
+            case PlayerState.Standing | PlayerState.DoubledDown =>
+              player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
+            case PlayerState.Busted =>
+              player.copy(bet = 0, state = PlayerState.LOST)
+            case _ => player
           }
-        copy(players = evaluated_players, state = GameState.Evaluated)
-      }
-    } else if (state == GameState.Evaluated) {
-        this.copy(state = GameState.Initialized)
-    } else {
-        this
+        }
+        copy(players = evaluated_players_bets, state = GameState.Evaluated, dealer = evaluated_dealer)
+
+      case GameState.Evaluated => copy(state = GameState.Initialized)
+
+      case _ => this
     }
   }
+
 
   def getPlayerOptions: List[String] = {
     val baseOptions = List("exit")
