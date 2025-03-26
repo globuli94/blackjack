@@ -15,5 +15,6 @@ lazy val root = project
           "org.scala-lang.modules" %% "scala-swing" % "3.0.0",
           "org.scalameta" %% "munit" % "1.0.0" % Test,
           "org.scalatest" %% "scalatest" % "3.2.18" % Test,
+          "org.scalactic" %% "scalactic" % "3.2.18"
       ),
   )
