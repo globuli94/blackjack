@@ -281,10 +281,10 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
 
     // Dealer Box Centered
     val dealerHand = if (dealer.hand.hand.length == 1) f"[* *] ${dealer.hand.toString()}" else f" ${dealer.hand.toString()} "
-    val dealerValue = f"Value: ${
+    val dealerValue = f"${
       if (dealer.hand.isBust) "Busted"
       else if (dealer.hand.hasBlackjack) "Blackjack"
-      else dealer.hand.value
+      else f"Value: ${dealer.hand.value}"
     }"
 
     def centerText(text: String, width: Int): String = {
