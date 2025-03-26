@@ -19,20 +19,27 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-      - name: compile
+          cache: 'sbt'
+      - name: Compile
         run: sbt compile
+      - name: Run tests
+        run: sbt test
 
-  run_tests:
+  run-tests:
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3
         with:
-          java-version: '11'
+          java-version: '19'
           distribution: 'adopt'
-      - name: run tests
+          cache: 'sbt'
+      - name: Run Tests
+        run: sbt clean coverage test
+      - name: Upload coverage report
         env:
-          COVERALLS_REPO_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        run:
-          sbt clean coverage test coverageReport coveralls
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        run: sbt coverageReport coveralls -Dcoveralls.service_name=github -Dcoveralls.service_job_id=${{ github.run_id }}
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v2.2.3
