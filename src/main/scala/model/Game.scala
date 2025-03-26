@@ -284,7 +284,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     val dealerValue = f"${
       if (dealer.hand.isBust) "Busted"
       else if (dealer.hand.hasBlackjack) "Blackjack"
-      else f"Value:${dealer.hand.value}"
+      else f"Value: ${dealer.hand.value}"
     }"
 
     def centerText(text: String, width: Int): String = {
