@@ -1,0 +1,15 @@
+.DS_Store
+.bloop/
+.idea/
+.metals/
+.vscode/
+project/.DS_Store
+project/.bloop/
+project/project/
+project/target/
+src/.DS_Store
+src/main/.DS_Store
+src/main/resources/.DS_Store
+src/main/resources/deck_pngs/.DS_Store
+target/
+.bsp/
