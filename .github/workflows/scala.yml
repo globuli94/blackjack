@@ -19,6 +19,10 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
           cache: 'sbt'
+      - name: Install sbt
+        run: |
+          curl -L https://github.com/sbt/sbt/releases/download/v1.9.7/sbt-1.9.7.tgz | tar xz
+          echo "$(pwd)/sbt/bin" >> $GITHUB_PATH
       - name: Compile
         run: sbt compile
 
@@ -34,6 +38,10 @@ jobs:
           java-version: '19'
           distribution: 'adopt'
           cache: 'sbt'
+      - name: Install sbt
+        run: |
+          curl -L https://github.com/sbt/sbt/releases/download/v1.9.7/sbt-1.9.7.tgz | tar xz
+          echo "$(pwd)/sbt/bin" >> $GITHUB_PATH
       - name: Run Tests
         run: sbt clean coverage test
       - name: Upload coverage report
