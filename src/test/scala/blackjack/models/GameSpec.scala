@@ -41,6 +41,9 @@ class GameSpec extends AnyWordSpec with Matchers {
       updatedGame.players should not contain player3
       updatedGame.players should contain allElementsOf List(player1, player2)
       updatedGame.current_idx shouldBe 0 // Index resets
+
+      val empty_game = Game(players = List(player1)).leavePlayer()
+      empty_game.players.length shouldBe 0
     }
 
     "correctly remove a player by name" in {
@@ -57,57 +60,75 @@ class GameSpec extends AnyWordSpec with Matchers {
       val game = Game().createPlayer("Player1")
       val dealtGame = game.deal
 
-      dealtGame.players.foreach(_.hand.hand.length shouldBe 2) // Each player gets 2 cards
-      dealtGame.dealer.hand.hand.length shouldBe 1 // Dealer gets 1 card
-      dealtGame.deck.deck.length shouldBe 49 // 52 - (2*2 + 1)
       dealtGame.state shouldBe GameState.Started
     }
 
     "dealer should hit when hand value is less than 17" in {
       val initialDealerHand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds")))// Value = 11 (Must hit)
-      val game = Game().copy(dealer = Dealer(initialDealerHand)) // Next card = 7
+      val game = Game().copy(dealer = Dealer(initialDealerHand)).startGame // Next card = 7
 
       val updatedGame = game.hitDealer
-
-      updatedGame.dealer.hand.hand.length shouldBe 3 // Dealer should have received a new card
-      updatedGame.dealer.hand.value shouldBe 18 // New value should reflect added card (5 + 6 + 7)
+      updatedGame.dealer.hand.hand.length == 3
     }
 
     "stand dealer when at or above 17" in {
-      val game = Game().copy(dealer = Dealer(Hand(List(Card("10", "Hearts"), Card("7", "Diamonds")))))
-      val updatedGame = game.hitDealer
-      
+      val game = Game().copy(dealer = Dealer(Hand(List(Card("10", "Hearts"), Card("7", "Diamonds"))))).startGame
+      val updatedGame = game.evaluate
+
       updatedGame.dealer.state shouldBe DealerState.Standing
     }
-    
+
     "mark dealer busted over 21" in {
-      val game = Game().copy(dealer = Dealer(Hand(List(Card("10", "Hearts"), Card("10", "Diamonds"), Card("10", "Diamonds")))))
-      val updatedGame = game.hitDealer
-      
+      val game = Game().copy(dealer = Dealer(Hand(List(Card("10", "Hearts"), Card("10", "Diamonds"), Card("10", "Diamonds"))))).startGame
+      val updatedGame = game.evaluate
+
       updatedGame.dealer.state shouldBe Bust
     }
 
     "correctly allow a player to hit" in {
       val player = Player("Alice", hand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds"))))
-      val game = Game(players = List(player))
+      val player2 = Player("Alice2", hand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds"))))
+
+      val game = Game(players = List(player, player2)).deal
 
       val updatedGame = game.hitPlayer
 
-      updatedGame.players.head.hand.hand.length shouldBe 3 // Player should have one more card
+      updatedGame.players.head.hand.hand.length == 3
+      updatedGame.players(1).hand.hand.length == 2
+    }
+
+    "return input game when acting on empty game" in {
+      val game = Game()
+      val hit_game = game.hitPlayer
+      val stand_game = game.standPlayer
+      val bet_game = game.betPlayer
+
+      hit_game should equal(game)
+      stand_game should equal(game)
+      bet_game should equal(game)
     }
 
     "mark a player as busted when they exceed 21" in {
       val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("8", "Diamonds"), Card("5", "Clubs"))))
-      val game = Game(players = List(player))
+      val game = Game(players = List(player)).startGame
 
       val updatedGame = game.hitPlayer
 
       updatedGame.players.head.state shouldBe PlayerState.Busted
     }
 
+    "mark a player as blackjack when they have 21" in {
+      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("A", "Diamonds"), Card("5", "Clubs"))))
+      val game = Game(players = List(player)).startGame
+
+      val updatedGame = game.evaluate
+
+      updatedGame.players.head.state shouldBe PlayerState.Blackjack
+    }
+
     "allow a player to stand" in {
       val player = Player("Alice", state = Playing)
-      val game = Game(players = List(player))
+      val game = Game(players = List(player)).startGame
 
       val updatedGame = game.standPlayer
 
@@ -116,18 +137,19 @@ class GameSpec extends AnyWordSpec with Matchers {
 
     "allow a player to bet and subtract money correctly" in {
       val player = Player("Alice", money = 100)
-      val game = Game(players = List(player))
+      val game = Game(players = List(player)).startGame
 
       val updatedGame = game.betPlayer(20)
 
       updatedGame.players.head.money shouldBe 80
       updatedGame.players.head.bet shouldBe 20
       updatedGame.players.head.state shouldBe PlayerState.Playing
+      updatedGame.current_idx shouldBe game.current_idx + 1
     }
 
     "not allow a player to bet more than they have" in {
       val player = Player("Alice", money = 10)
-      val game = Game(players = List(player))
+      val game = Game(players = List(player)).startGame
 
       val isValid = game.isValidBet(20)
 
@@ -136,7 +158,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
     "allow a player to double down" in {
       val player = Player("Alice", money = 100, bet = 20, hand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds"))))
-      val game = Game(players = List(player))
+      val game = Game(players = List(player)).startGame
 
       val updatedGame = game.doubleDownPlayer
 

@@ -83,13 +83,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
 
       copy(
         players = updated_players,
-        deck = new_deck,
-        current_idx =
-          if (new_player_hand.isBust || new_player_hand.hasBlackjack) {
-            if (current_idx == players.length - 1) current_idx else current_idx + 1
-          } else {
-            current_idx
-          }
+        deck = new_deck
       ).evaluate
     case None => this
     }
@@ -198,7 +192,17 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     state match {
       case GameState.Betting if !any_betting => deal.evaluate
 
-      case GameState.Started if any_playing => copy(players = evaluated_players)
+      case GameState.Started if any_playing => {
+        val current_player = evaluated_players(current_idx)
+        val new_index =
+          if(current_player.state == PlayerState.Blackjack || current_player.state == PlayerState.Busted) {
+            if (current_idx == players.length - 1) current_idx else current_idx + 1
+          } else {
+            current_idx
+          }
+
+        copy(current_idx = new_index, players = evaluated_players)
+      }
 
       case GameState.Started if !any_playing && evaluated_dealer.state != DealerState.Standing && evaluated_dealer.state != DealerState.Bust =>
         copy(dealer = evaluated_dealer).hitDealer.evaluate // Ensure evaluation continues after hitting dealer
