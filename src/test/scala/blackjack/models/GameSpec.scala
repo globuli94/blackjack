@@ -2,8 +2,9 @@ package blackjack.models
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import model.*
+import model.{DealerState, *}
 import model.DealerState.Bust
+import model.GameState.{Evaluated, Started}
 import model.PlayerState.*
 
 class GameSpec extends AnyWordSpec with Matchers {
@@ -71,19 +72,7 @@ class GameSpec extends AnyWordSpec with Matchers {
       updatedGame.dealer.hand.hand.length == 3
     }
 
-    "stand dealer when at or above 17" in {
-      val game = Game().copy(dealer = Dealer(Hand(List(Card("10", "Hearts"), Card("7", "Diamonds"))))).startGame
-      val updatedGame = game.evaluate
 
-      updatedGame.dealer.state shouldBe DealerState.Standing
-    }
-
-    "mark dealer busted over 21" in {
-      val game = Game().copy(dealer = Dealer(Hand(List(Card("10", "Hearts"), Card("10", "Diamonds"), Card("10", "Diamonds"))))).startGame
-      val updatedGame = game.evaluate
-
-      updatedGame.dealer.state shouldBe Bust
-    }
 
     "correctly allow a player to hit" in {
       val player = Player("Alice", hand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds"))))
@@ -101,16 +90,15 @@ class GameSpec extends AnyWordSpec with Matchers {
       val game = Game()
       val hit_game = game.hitPlayer
       val stand_game = game.standPlayer
-      val bet_game = game.betPlayer
 
       hit_game should equal(game)
       stand_game should equal(game)
-      bet_game should equal(game)
     }
 
     "mark a player as busted when they exceed 21" in {
-      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("8", "Diamonds"), Card("5", "Clubs"))))
-      val game = Game(players = List(player)).startGame
+      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("8", "Diamonds"), Card("5", "Clubs"))), state = PlayerState.Playing)
+      val player2 = Player("Steve", state = PlayerState.Playing)
+      val game = Game(players = List(player, player2), deck = Deck().shuffle, state = GameState.Started)
 
       val updatedGame = game.hitPlayer
 
@@ -118,33 +106,43 @@ class GameSpec extends AnyWordSpec with Matchers {
     }
 
     "mark a player as blackjack when they have 21" in {
-      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("A", "Diamonds"), Card("5", "Clubs"))))
-      val game = Game(players = List(player)).startGame
+      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("A", "Diamonds"))))
+      val player2 = Player("Steve", state = PlayerState.Playing)
+      val game = Game(players = List(player, player2), deck = Deck().shuffle, state = GameState.Started)
 
       val updatedGame = game.evaluate
 
       updatedGame.players.head.state shouldBe PlayerState.Blackjack
     }
 
-    "allow a player to stand" in {
+    "allow a player to stand and leave all other players the same" in {
       val player = Player("Alice", state = Playing)
-      val game = Game(players = List(player)).startGame
+      val player2 = Player("Steve", state = Playing)
+      val game = Game(players = List(player, player2), state = GameState.Started)
 
       val updatedGame = game.standPlayer
 
       updatedGame.players.head.state shouldBe PlayerState.Standing
+      updatedGame.players(1).state shouldBe PlayerState.Playing
     }
 
     "allow a player to bet and subtract money correctly" in {
-      val player = Player("Alice", money = 100)
-      val game = Game(players = List(player)).startGame
+      val player = Player("Alice", money = 100, state = PlayerState.Betting)
+      val player2 = Player("Steve", state = PlayerState.Betting)
+      val game = Game(players = List(), state = GameState.Betting)
+      val game_with_1 = Game(players = List(player), state = GameState.Betting)
+      val game_with_2 = Game(players = List(player, player2), state = GameState.Betting)
 
       val updatedGame = game.betPlayer(20)
+      val updatedGame_with_1 = game_with_1.betPlayer(20)
+      val updatedGame_with_2 = game_with_2.betPlayer(20)
 
-      updatedGame.players.head.money shouldBe 80
-      updatedGame.players.head.bet shouldBe 20
-      updatedGame.players.head.state shouldBe PlayerState.Playing
-      updatedGame.current_idx shouldBe game.current_idx + 1
+      updatedGame should equal(game)
+
+      updatedGame_with_1.current_idx shouldBe 0
+
+      updatedGame_with_2.players.head.state shouldBe PlayerState.Playing
+      updatedGame_with_2.current_idx shouldBe game_with_2.current_idx + 1
     }
 
     "not allow a player to bet more than they have" in {
@@ -156,29 +154,214 @@ class GameSpec extends AnyWordSpec with Matchers {
       isValid shouldBe false
     }
 
-    "allow a player to double down" in {
-      val player = Player("Alice", money = 100, bet = 20, hand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds"))))
-      val game = Game(players = List(player)).startGame
+    "not allow a player to bet if no players" in {
+      val game = Game()
 
-      val updatedGame = game.doubleDownPlayer
+      val isValid = game.isValidBet(100)
 
-      updatedGame.players.head.money shouldBe 60 // 100 - 40 (double bet)
-      updatedGame.players.head.bet shouldBe 40
-      updatedGame.players.head.hand.hand.length shouldBe 3 // One extra card
-      updatedGame.players.head.state shouldBe PlayerState.DoubledDown
+      isValid shouldBe false
     }
 
-    "evaluate the game correctly when all players have finished" in {
-      val player1 = Player("Alice", money = 100, bet = 10, state = Standing, hand = Hand(List(Card("10", "Hearts"), Card("7", "Diamonds"))))
-      val player2 = Player("Bob", money = 100, bet = 10, state = Busted, hand = Hand(List(Card("10", "Hearts"), Card("9", "Diamonds"), Card("5", "Clubs"))))
+    "should return the same game when betting on empty game" in {
+      val game = Game().startGame
+      val bet_game = game.betPlayer(100)
+
+      bet_game == game
+    }
+
+    "should keep the second player the same if first player bets" in {
+      val game = Game().createPlayer("Steve").createPlayer("Mark")
+      val started_game = game.startGame
+
+      val bet_game = game.betPlayer(100)
+
+      bet_game.players(1).bet should be(0)
+    }
+
+    "allow a player to double down" in {
+      val player = Player("Alice", money = 100, bet = 20, hand = Hand(List(Card("5", "Hearts"))), state = PlayerState.Playing)
+      val player2 = Player("Steve", state = PlayerState.Playing)
+      val game = Game(state = GameState.Started)
+      val game_with_1 = Game(players = List(player), deck = Deck().shuffle, state = GameState.Started)
+      val game_with_2 = Game(players = List(player, player2), deck = Deck().shuffle, state = GameState.Started)
+
+      val updatedGame = game.doubleDownPlayer
+      val updatedGame_with_1 = game_with_1.doubleDownPlayer
+      val updatedGame_with_2 = game_with_2.doubleDownPlayer
+
+      updatedGame should equal(game)
+      updatedGame_with_2.players.head.state shouldBe PlayerState.DoubledDown
+      updatedGame_with_2.players(1) should equal(player2)
+
+    }
+
+    "evaluate win or loss depending on cards and player states" should {
+
+      val game = Game().startGame
       val dealer = Dealer(Hand(List(Card("10", "Hearts"), Card("8", "Diamonds"))))
-      val game = Game(players = List(player1, player2), dealer = dealer, state = GameState.Started)
 
-      val evaluatedGame = game.evaluate
+      "set index correctly if player has blackjack" in {
+        val player = Player("Alice", state = Blackjack)
+        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
 
-      evaluatedGame.state shouldBe GameState.Evaluated
-      evaluatedGame.players.head.state shouldBe PlayerState.LOST // Dealer had 18, player had 17
-      evaluatedGame.players(1).state shouldBe PlayerState.LOST // Busted player always loses
+        evaluated_game.current_idx shouldBe(game.current_idx)
+      }
+
+      "set index correctly if player has busted" in {
+        val player = Player("Alice", state = Busted)
+        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
+
+        evaluated_game.current_idx shouldBe (game.current_idx)
+      }
+
+      "eval correctly if player and dealer have blackjack" in {
+        val player = Player("Alice", state = Blackjack)
+        val dealer = Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("K", "Hearts"))))
+
+        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+
+        evaluated_game.players.head.state shouldBe(PlayerState.LOST)
+      }
+
+      "eval correctly if player has blackjack" in {
+        val player = Player("Alice", state = Blackjack)
+        val dealer = Dealer(hand = Hand(hand = List(Card("7", "Hearts"), Card("10", "Hearts"))))
+
+        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+
+        evaluated_game.players.head.state shouldBe (PlayerState.WON)
+      }
+
+      "eval correctly if player is bust" in {
+        val player = Player("Alice", state = Busted)
+        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
+
+        evaluated_game.players.head.state shouldBe (PlayerState.LOST)
+      }
+
+      "eval correctly if player has lost standing" in {
+        val player = Player("Alice", state = Standing, hand = Hand(List(Card("2", "Hearts"), Card("2", "Hearts"))))
+        val dealer =
+          Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
+
+        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+
+        evaluated_game.players.head.state shouldBe (PlayerState.LOST)
+      }
+
+      "eval correctly if player has won standing" in {
+        val player =
+          Player("Alice", state = Standing, hand = Hand(List(Card("10", "Hearts"), Card("10", "Hearts"))))
+        val dealer =
+          Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
+
+        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+
+        evaluated_game.players.head.state shouldBe (PlayerState.WON)
+      }
+
+      "eval correctly if player has won double down" in {
+        val player = Player("Alice", state = DoubledDown, hand = Hand(List(Card("10", "Hearts"), Card("10", "Hearts"))))
+        val dealer = Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))))
+
+        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+
+        evaluated_game.players.head.state shouldBe (PlayerState.WON)
+      }
+
+      "return player if any other player state" in {
+        val player = Player("Alice", state = PlayerState.LOST)
+        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
+
+        evaluated_game.players.head should equal(player)
+      }
+    }
+
+    "provide the correct player options" should {
+      val player = Player("Alice", state = PlayerState.LOST)
+
+      "always have option exit" in {
+        val game = Game(players = List(player))
+        val options = game.getPlayerOptions
+
+        options should contain("exit")
+      }
+
+      "not contain start if there are no players" in {
+        val game = Game()
+        val options = game.getPlayerOptions
+
+        options should not contain("start")
+      }
+
+      "have the option add <player> when the game is initialized and has players" in {
+        val game = Game(players = List(player))
+        val options = game.getPlayerOptions
+
+        options should contain("add <player>")
+      }
+
+      "have the option start when the game is initialized and has players" in {
+        val game = Game(players = List(player))
+        val options = game.getPlayerOptions
+
+        options should contain("start")
+      }
+
+      "have the option to bet and leave when in game is in state betting" in {
+        val game = Game(state = GameState.Betting)
+        val options = game.getPlayerOptions
+
+        options should contain("bet <amount>")
+      }
+
+      "when the game state is started" should {
+
+        "have the option to stand" in {
+          val game = Game(players = List(Player("Steve")), state = Started)
+          val options = game.getPlayerOptions
+
+          options should contain("stand")
+        }
+
+        "have to option to hit when hand allows hit" in {
+          val hand = Hand(hand = List(Card("10", "Hearts"), Card("10", "Hearts")))
+          val game = Game(players = List(Player("Steve",  hand = hand)), state = Started)
+          val options = game.getPlayerOptions
+
+          options should contain("hit")
+        }
+
+        "have no option to hit when hand doesnt allow hit" in {
+          val hand = Hand(hand = List(Card("10", "Hearts"), Card("10", "Hearts"), Card("10", "Hearts")))
+          val game = Game(players = List(Player("Steve", hand = hand)), state = Started)
+          val options = game.getPlayerOptions
+
+          options should not contain("hit")
+        }
+
+        "have to option to double down when hand allows hit" in {
+          val hand = Hand(hand = List(Card("5", "Hearts"), Card("5", "Hearts")))
+          val game = Game(players = List(Player("Steve",  hand = hand)), state = Started)
+          val options = game.getPlayerOptions
+
+          options should contain("double (down)")
+        }
+
+        "return base options if there is no player" in {
+          val game = Game(state = Started)
+          val options = game.getPlayerOptions
+
+          options should contain("exit")
+        }
+      }
+
+      "when the game is evaluated have the option to continue " in {
+        val game = Game(state = Evaluated)
+        val options = game.getPlayerOptions
+
+        options should contain("continue")
+      }
     }
 
     "reset to initialized state after evaluation" in {

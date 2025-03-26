@@ -59,7 +59,6 @@ case class Controller(var game: Game) extends Observable {
     } else {
       notifyObservers(Event.invalidCommand)
     }
-
   }
 
   def doubleDown(): Unit = {
