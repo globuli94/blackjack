@@ -4,7 +4,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import model.{DealerState, *}
 import model.DealerState.Bust
-import model.GameState.{Evaluated, Started}
+import model.GameState.{Evaluated, Initialized, Started}
 import model.PlayerState.*
 
 class GameSpec extends AnyWordSpec with Matchers {
@@ -371,6 +371,96 @@ class GameSpec extends AnyWordSpec with Matchers {
       val newGame = game.evaluate
 
       newGame.state shouldBe GameState.Initialized
+    }
+  }
+
+  "Game toString" should {
+
+    "display initial game state correctly" in {
+      val game = Game(state = Initialized)
+      val output = game.toString
+
+      output should include("State: Initialized")
+      output should include("Dealer")
+      output should include("Table")
+      output should include("Options:")
+    }
+
+    "display initial game state correctly with players" in {
+      val player = Player("Steve")
+      val game = Game(state = Initialized, players = List(player))
+      val output = game.toString
+
+      output should include("Player:")
+      output should include("Bank:")
+      output should include("State:")
+    }
+
+    "display dealer and player hands when game has started" in {
+      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("A", "Diamonds"))))
+      val dealer = Dealer(hand = Hand(List(Card("10", "Spades"))))
+      val game = Game(players = List(player), dealer = dealer, state = GameState.Started)
+
+      val output = game.toString
+
+      output should include("State: Started")
+      output should include("Alice")
+      output should include("Dealer")
+      output should include("[♥ 10][♦ A]") // Example expected card representation
+    }
+
+    "display dealer and player hands when game has started (dealer has blackjack)" in {
+      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("A", "Diamonds"))))
+      val dealer = Dealer(hand = Hand(List(Card("10", "Spades"), Card("A", "Spades"))))
+      val game = Game(players = List(player), dealer = dealer, state = GameState.Started)
+
+      val output = game.toString
+
+      output should include("Blackjack")
+    }
+
+    "display dealer and player hands when game has started (dealer is bust)" in {
+      val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("A", "Diamonds"))))
+      val dealer = Dealer(hand = Hand(List(Card("10", "Spades"), Card("10", "Spades"), Card("10", "Spades"))))
+      val game = Game(players = List(player), dealer = dealer, state = GameState.Started)
+
+      val output = game.toString
+
+      output should include("Busted")
+    }
+
+    "display betting state correctly" in {
+      val player = Player("Alice", money = 100, bet = 20, state = PlayerState.Betting)
+      val game = Game(players = List(player), state = GameState.Betting)
+
+      val output = game.toString
+
+      output should include("State: Betting")
+      output should include("Bet: $20")
+      output should include("Bank: $100")
+    }
+
+    "display game evaluation correctly" in {
+      val player = Player("Alice", hand = Hand(List(Card("A", "Spades"), Card("K", "Hearts"))), state = PlayerState.Blackjack)
+      val game = Game(players = List(player), state = GameState.Evaluated)
+
+      val output = game.toString
+
+      output should include("State: Evaluated")
+      output should include("Blackjack")
+      output should include("Alice")
+    }
+
+    "highlight the current player correctly" in {
+      val player1 = Player("Alice", hand = Hand(List(Card("10", "Diamonds"), Card("6", "Clubs"))))
+      val player2 = Player("Bob", hand = Hand(List(Card("8", "Hearts"), Card("7", "Spades"))))
+      val game = Game(players = List(player1, player2), current_idx = 1, state = GameState.Started)
+
+      val output = game.toString
+
+      output should include("Current Player: Bob")
+      output should include("[♦ 10][♣ 6]")
+      output should include("[♥ 8][♠ 7]")
     }
   }
 }
