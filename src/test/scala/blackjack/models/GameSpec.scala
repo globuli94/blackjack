@@ -17,6 +17,12 @@ class GameSpec extends AnyWordSpec with Matchers {
 
   "A Game" should {
 
+    "initialize a game" in {
+      val game = Game()
+
+      game.initialize shouldEqual(Game())
+    }
+
     "initially have no players and a new dealer" in {
       val game = Game()
 

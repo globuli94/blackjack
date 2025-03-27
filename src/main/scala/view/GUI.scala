@@ -9,9 +9,10 @@ import util.Event.{AddPlayer, End, Split}
 
 import scala.swing.*
 import scala.swing.MenuBar.NoMenuBar.revalidate
-import javax.swing.ImageIcon
+import javax.swing.{ImageIcon, WindowConstants}
 import java.awt.{Color, Font, Graphics2D, RenderingHints}
 import java.net.URL
+import scala.swing.event.WindowClosing
 
 class GUI(controller: ControllerInterface) extends Frame with Observer {
   private val poolTableGreen = new Color(0x0e5932)
@@ -26,6 +27,15 @@ class GUI(controller: ControllerInterface) extends Frame with Observer {
   visible = true
   centerOnScreen()
   controller.add(this)
+
+  peer.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
+  // Listen to the WindowClosing event (triggered by the close button)
+  reactions += {
+    case WindowClosing(_) =>
+      // Call controller.exit() when the window close button is clicked
+      controller.exit() // Handle exit logic in the controller
+      sys.exit(0) // Exit the application
+  }
 
   private val button_dimension = new Dimension(200,50)
 
