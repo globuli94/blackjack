@@ -1,10 +1,11 @@
 package blackjack.controllers
 
 import controller.controllerComponent.{Controller, ControllerInterface}
+import model.cardComponent.Card
 import model.deckComponent.{Deck, DeckInterface}
 import model.gameComponent.{Game, GameInterface, GameState}
-import model.handComponent.HandInterface
-import model.playerComponent.PlayerState.Betting
+import model.handComponent.{Hand, HandInterface}
+import model.playerComponent.PlayerState.{Betting, Idle}
 import model.playerComponent.{Player, PlayerInterface, PlayerState}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -148,12 +149,11 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       controller.getGame.getState should be(GameState.Initialized)
     }
 
-
     "double down next player if possible" in {
       val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test", state = PlayerState.Playing)
-      val hand: HandInterface = player.getHand.addCard(deck.draw(0))
-      val player_with_hand = Player(name = player.getName, hand = hand)
+      val player: PlayerInterface = Player("test")
+      val hand: HandInterface = Hand().addCard(Card("2", "Hearts")).addCard(Card("7", "Hearts"))
+      val player_with_hand = Player(name = player.getName, hand = hand, bet = 100, money = 200, state = PlayerState.Betting)
 
       val game1: GameInterface =
         Game(
@@ -162,10 +162,89 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           deck = deck)
 
       val controller = Controller(game1)
+      controller.doubleDown()
 
-      controller.hitNextPlayer()
+      controller.game.getPlayers.head.getHand.length should be(3)
+    }
+
+    "not double down if not possible" in {
+      val deck: DeckInterface = Deck().shuffle
+      val player: PlayerInterface = Player("test")
+      val hand: HandInterface = Hand().addCard(Card("5", "Hearts")).addCard(Card("7", "Hearts"))
+      val player_with_hand = Player(name = player.getName, hand = hand, bet = 100, money = 200, state = PlayerState.Betting)
+
+      val game1: GameInterface =
+        Game(
+          state = GameState.Started,
+          players = List(player_with_hand, player),
+          deck = deck)
+
+      val controller = Controller(game1)
+      controller.doubleDown()
 
       controller.game.getPlayers.head.getHand.length should be(2)
+    }
+
+    "bet if allowed by game state" in {
+      val deck: DeckInterface = Deck().shuffle
+      val player: PlayerInterface = Player("test")
+      val player_with_hand = Player(name = player.getName, bet = 0, money = 200, state = PlayerState.Betting)
+
+      val game1: GameInterface =
+        Game(
+          state = GameState.Betting,
+          players = List(player_with_hand, player),
+          deck = deck)
+
+      val controller = Controller(game1)
+      controller.bet("100")
+
+      controller.getGame.getPlayers.head.getState should be (PlayerState.Playing)
+    }
+
+    "not bet if bet is invalid" in {
+      val deck: DeckInterface = Deck().shuffle
+      val player: PlayerInterface = Player("test")
+      val player_with_hand = Player(name = player.getName, bet = 0, money = 200, state = PlayerState.Betting)
+
+      val game1: GameInterface =
+        Game(
+          state = GameState.Betting,
+          players = List(player_with_hand, player),
+          deck = deck)
+
+      val controller = Controller(game1)
+      controller.bet("1000")
+
+      controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
+
+      controller.bet("test")
+
+      controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
+    }
+
+    "not bet if not allowed by game state" in {
+      val deck: DeckInterface = Deck().shuffle
+      val player: PlayerInterface = Player("test")
+      val player_with_hand = Player(name = player.getName, bet = 0, money = 200, state = PlayerState.Betting)
+
+      val game1: GameInterface =
+        Game(
+          state = GameState.Started,
+          players = List(player_with_hand, player),
+          deck = deck)
+
+      val controller = Controller(game1)
+      controller.bet("100")
+
+      controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
+    }
+
+    "create a string on tostring" in {
+      val game : GameInterface = Game()
+      val controller : ControllerInterface = Controller(game)
+
+      controller.toString should be (a[String])
     }
   }
 }
