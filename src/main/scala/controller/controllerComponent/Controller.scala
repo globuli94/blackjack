@@ -44,7 +44,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
 
   def hitNextPlayer(): Unit = {
     val player = game.getPlayers(game.getIndex)
-    if (player.getHand.canHit && game.state == GameState.Started) {
+    if (player.getHand.canHit && game.getState == GameState.Started) {
       game = game.hitPlayer
       notifyObservers(Event.hitNextPlayer)
     } else {
@@ -53,7 +53,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
   }
 
   def standNextPlayer(): Unit = {
-    if (game.state == GameState.Started) {
+    if (game.getState == GameState.Started) {
       game = game.standPlayer
       notifyObservers(Event.standNextPlayer)
     } else {
@@ -62,9 +62,9 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
   }
 
   def doubleDown(): Unit = {
-    val player = game.players(game.current_idx)
+    val player = game.getPlayers(game.getIndex)
 
-    if (game.state == GameState.Started && player.hand.canDoubleDown && player.bet <= player.money) {
+    if (game.getState == GameState.Started && player.getHand.canDoubleDown && player.getBet <= player.getMoney) {
       game = game.doubleDownPlayer
       notifyObservers(Event.doubleDown)
     } else {
@@ -73,7 +73,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
   }
 
   def bet(amount: String): Unit = {
-    if (game.state == GameState.Betting) {
+    if (game.getState == GameState.Betting) {
       try {
         if (game.isValidBet(amount.toInt) && amount.toInt > 0) {
           game = game.betPlayer(amount.toInt)

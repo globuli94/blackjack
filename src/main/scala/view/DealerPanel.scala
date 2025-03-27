@@ -1,15 +1,15 @@
 package view
 
 import model.dealerComponent.DealerState.{Bust, Dealing, Idle, Standing}
-import model.cardComponent.Card
-import model.dealerComponent.Dealer
+import model.cardComponent.{Card, CardInterface}
+import model.dealerComponent.{Dealer, DealerInterface}
 
 import java.awt.Color
 import java.net.URL
 import javax.swing.{BorderFactory, ImageIcon}
 import scala.swing.{BorderPanel, BoxPanel, Dimension, FlowPanel, Font, Label, Orientation, Swing}
 
-class DealerPanel(dealer: Dealer) extends BoxPanel(Orientation.Vertical) {
+class DealerPanel(dealer: DealerInterface) extends BoxPanel(Orientation.Vertical) {
   preferredSize = new Dimension(235, 280)
   minimumSize = new Dimension(235, 280)
   maximumSize = new Dimension(235, 280)
@@ -19,7 +19,7 @@ class DealerPanel(dealer: Dealer) extends BoxPanel(Orientation.Vertical) {
 
   val player_font = new Font("Arial", Font.Bold.id, 18)
 
-  private val cards: Seq[Card] = dealer.hand.hand
+  private val cards: Seq[CardInterface] = dealer.getHand.getCards
   private val blank_card = Card("blank", "blank")
 
   val imagePath: URL = getClass.getResource("/business.png")
@@ -64,12 +64,12 @@ class DealerPanel(dealer: Dealer) extends BoxPanel(Orientation.Vertical) {
     contents += new BoxPanel(Orientation.Horizontal) {
       background = poolTableGreen
       val state_label: Label =
-        if (dealer.hand.hasBlackjack)
-          Label(s"BLACKJACK - ${dealer.hand.value}")
-        else if (dealer.state == Bust)
-          Label(s"${dealer.state} - ${dealer.hand.value}")
-        else if(dealer.state != Bust)
-          Label(s"Value: ${dealer.hand.value}")
+        if (dealer.getHand.hasBlackjack)
+          Label(s"BLACKJACK - ${dealer.getHand.getHandValue}")
+        else if (dealer.getState == Bust)
+          Label(s"${dealer.getState} - ${dealer.getHand.getHandValue}")
+        else if(dealer.getState != Bust)
+          Label(s"Value: ${dealer.getHand.getHandValue}")
         else
           Label()
       state_label.font = player_font
@@ -83,8 +83,8 @@ class DealerPanel(dealer: Dealer) extends BoxPanel(Orientation.Vertical) {
   contents += new BorderPanel {
     background = poolTableGreen
     add(dealer_image, BorderPanel.Position.North)
-    if (dealer.hand.hand.nonEmpty) add(cards_panel, BorderPanel.Position.Center)
-    if(dealer.hand.hand.nonEmpty) add(dealer_stat_panel, BorderPanel.Position.South)
+    if (dealer.getHand.getCards.nonEmpty) add(cards_panel, BorderPanel.Position.Center)
+    if(dealer.getHand.getCards.nonEmpty) add(dealer_stat_panel, BorderPanel.Position.South)
   }
 
   border = Swing.EmptyBorder(10)

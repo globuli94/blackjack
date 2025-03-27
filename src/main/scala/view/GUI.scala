@@ -2,9 +2,9 @@ package view
 
 import controller.controllerComponent.Controller
 import util.{Event, Observer}
-import model.gameComponent.GameState.{Evaluated, Initialized, Started}
-import model.gameComponent.GameState
-import model.playerComponent.Player
+import model.gameComponent.*
+import model.gameComponent.GameState.Initialized
+import model.playerComponent.*
 import util.Event.{AddPlayer, End, Split}
 
 import scala.swing.*
@@ -100,9 +100,9 @@ class GUI(controller: Controller) extends Frame with Observer {
         maximumSize = new Dimension(220,400)
 
         contents += Swing.HStrut(5)
-        if (controller.game.state == Initialized && controller.game.players.nonEmpty) contents += start_button
+        if (controller.game.getState == GameState.Initialized && controller.game.getPlayers.nonEmpty) contents += start_button
         contents += Swing.HStrut(5)
-        if(controller.game.state == GameState.Initialized) contents += add_player_button
+        if(controller.game.getState == GameState.Initialized) contents += add_player_button
         contents += Swing.HStrut(5)
         contents += reset_button
 
@@ -119,8 +119,8 @@ class GUI(controller: Controller) extends Frame with Observer {
     maximumSize = new Dimension(980, 400)
     background = poolTableGreen
     contents.clear() // Remove old players
-    for ((player, index) <- controller.game.players.zipWithIndex) {
-      val panel = if (controller.game.current_idx == index) {
+    for ((player, index) <- controller.game.getPlayers.zipWithIndex) {
+      val panel = if (controller.game.getIndex == index) {
         new PlayerPanel(player, true)
       } else {
         new PlayerPanel(player, false)
@@ -136,7 +136,7 @@ class GUI(controller: Controller) extends Frame with Observer {
     background = poolTableGreen
     contents.clear() // Remove old players
 
-    val player: Player = controller.game.players(controller.game.current_idx)
+    val player: PlayerInterface = controller.game.getPlayers(controller.game.getIndex)
 
     contents += ControlPanel(controller)
   }
@@ -152,7 +152,7 @@ class GUI(controller: Controller) extends Frame with Observer {
 
   private def rebuildUI(): Unit = {
     val current_player =
-      if (controller.game.players.nonEmpty) controller.game.players(controller.game.current_idx)
+      if (controller.game.getPlayers.nonEmpty) controller.game.getPlayers(controller.game.getIndex)
 
 
     contents = new BoxPanel(Orientation.Horizontal) {
@@ -161,9 +161,9 @@ class GUI(controller: Controller) extends Frame with Observer {
       contents +=
         new BorderPanel() {
           background = poolTableGreen
-          if(controller.game.dealer.hand.hand.nonEmpty) add(DealerPanel(controller.game.dealer), BorderPanel.Position.North)
-          if(controller.game.players.nonEmpty) add(player_panel, BorderPanel.Position.Center)
-          if(controller.game.players.nonEmpty) add(player_control_panel, BorderPanel.Position.South)
+          if(controller.game.getDealer.getHand.getCards.nonEmpty) add(DealerPanel(controller.game.getDealer), BorderPanel.Position.North)
+          if(controller.game.getPlayers.nonEmpty) add(player_panel, BorderPanel.Position.Center)
+          if(controller.game.getPlayers.nonEmpty) add(player_control_panel, BorderPanel.Position.South)
           //border = Swing.EmptyBorder(10, 0 , 0, 10)
         }
       border = Swing.EmptyBorder(10, 10, 10, 10)

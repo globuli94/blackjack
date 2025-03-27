@@ -1,9 +1,11 @@
 package model.gameComponent
 
+import model.cardComponent.CardInterface
 import model.dealerComponent.*
 import model.deckComponent.*
 import model.handComponent.*
 import model.playerComponent.*
+import model.playerComponent.PlayerState.{LOST, WON}
 
 enum GameState {
   case Initialized, Betting, Started, Evaluated
@@ -22,7 +24,7 @@ case class Game(
   override def getState: GameState = state
   override def getDealer: DealerInterface = dealer
   
-  override def createPlayer(name: String): Game = {
+  override def createPlayer(name: String): GameInterface = {
     if (players.length < 4) {
       this.copy(players = Player(name) :: players).evaluate
     } else {
@@ -30,7 +32,7 @@ case class Game(
     }
   }
 
-  override def leavePlayer(name: String = ""): Game = {
+  override def leavePlayer(name: String = ""): GameInterface = {
     val idx = if (current_idx == players.length - 1) 0 else current_idx
 
     if(players.length == 1) {
@@ -38,32 +40,29 @@ case class Game(
     } else if(name.trim.isEmpty) {
       copy(players = players.patch(current_idx, Nil, 1), current_idx = idx).evaluate
     } else {
-      copy(players = players.filterNot(_.name == name), current_idx = idx).evaluate
+      copy(players = players.filterNot(_.getName == name), current_idx = idx).evaluate
     }
   }
 
   // performs the initial deal -> dealer 1 card, all players 2 cards, player state set to playing
-  override def deal: Game = {
+  override def deal: GameInterface = {
     val shuffled_deck = deck.shuffle
 
-    val (card, deck_after_dealer) = shuffled_deck.draw()
+    val (card: CardInterface, deck_after_dealer: DeckInterface) = shuffled_deck.draw
     val dealer_hand = Hand().addCard(card)
 
-    val (updated_players, final_deck) = players.foldLeft((List.empty[Player], deck_after_dealer)) {
+    val (updated_players, final_deck) = players.foldLeft((List.empty[PlayerInterface], deck_after_dealer)) {
       case ((playersAcc, currentDeck), player) =>
         // Draw two cards for each player
-        val (first_card, deck_after_first_draw) = currentDeck.draw()
-        val (second_card, finalDeck) = deck_after_first_draw.draw()
+        val (first_card, deck_after_first_draw) = currentDeck.draw
+        val (second_card, finalDeck) = deck_after_first_draw.draw
 
         // Add cards to player's hand
-        val updatedHand = player.hand.addCard(first_card).addCard(second_card)
+        val updatedHand = player.getHand.addCard(first_card).addCard(second_card)
 
         // Update player's state to playing
         val updatedPlayer =
-          player.copy(
-            hand = updatedHand,
-            state = PlayerState.Playing
-          )
+          Player(player.getName, updatedHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Playing)
 
         // Accumulate the updated player and deck for the next iteration
         (playersAcc :+ updatedPlayer, finalDeck)
@@ -73,24 +72,24 @@ case class Game(
   }
 
   // hits dealer if possible, else changes dealers state to bust or standing
-  override def hitDealer: Game = {
-      val (card, new_deck) = deck.draw()
-      val new_dealer = dealer.copy(hand = dealer.hand.addCard(card))
+  override def hitDealer: GameInterface = {
+      val (card: CardInterface, new_deck: DeckInterface) = deck.draw
+      val new_dealer: DealerInterface = Dealer(dealer.getHand.addCard(card), dealer.getState)
       copy(dealer = new_dealer, deck = new_deck).evaluate
   }
 
   // hits current player and sets player state to blackjack playing or busted, updates deck
-  override def hitPlayer: Game = {
+  override def hitPlayer: GameInterface = {
     players.lift(current_idx) match {
     case Some(player) =>
-      val (card, new_deck) = deck.draw()
-      val new_player_hand = player.hand.addCard(card)
+      val (card, new_deck) = deck.draw
+      val new_player_hand = player.getHand.addCard(card)
 
-      val updated_players: List[Player] = players.map({
+      val updated_players: List[PlayerInterface] = players.map({
         p => {
-          if(p == player) p.copy(
-            hand = new_player_hand,
-          ) else p
+          if(p == player)
+            Player(p.getName, new_player_hand, p.getSplitHand, p.getMoney, p.getBet, p.getState)
+          else p
         }
       })
 
@@ -103,12 +102,14 @@ case class Game(
   }
 
   // stands current player = updates player state to standing
-  override def standPlayer: Game = {
+  override def standPlayer: GameInterface = {
     players.lift(current_idx) match {
       case Some(player) =>
-        val updated_players: List[Player] = players.map({
+        val updated_players: List[PlayerInterface] = players.map({
           p => {
-            if(p == player) p.copy(state = PlayerState.Standing) else p
+            if(p == player)
+              Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, p.getBet, PlayerState.Standing)
+            else p
           }
         })
 
@@ -120,14 +121,16 @@ case class Game(
   }
 
   // subtracts amount of money from player, updates money, bet and player state to playing
-  override def betPlayer(amount: Int): Game = {
+  override def betPlayer(amount: Int): GameInterface = {
     players.lift(current_idx) match {
       case Some(player) =>
-        val new_balance = player.money - amount
+        val new_balance = player.getMoney - amount
 
-        val updated_players: List[Player] = players.map({
+        val updated_players: List[PlayerInterface] = players.map({
           p => {
-            if (p == player) p.copy(money = new_balance, bet = amount, state = PlayerState.Playing) else p
+            if (p == player)
+              Player(p.getName, p.getHand, p.getSplitHand, new_balance, amount, PlayerState.Playing)
+            else p
           }
         })
         copy(
@@ -142,23 +145,25 @@ case class Game(
   override def isValidBet(amount: Int): Boolean = {
     players.lift(current_idx) match {
       case Some(player) =>
-        amount <= player.money
+        amount <= player.getMoney
       case None => false
     }
   }
 
-  override def doubleDownPlayer: Game = {
+  override def doubleDownPlayer: GameInterface = {
     players.lift(current_idx) match {
       case Some(player) =>
-        val new_bet = player.bet * 2
-        val new_balance = player.money - player.bet
+        val new_bet = player.getBet * 2
+        val new_balance = player.getMoney - player.getBet
 
-        val (card, new_deck) = deck.draw()
-        val new_player_hand = player.hand.addCard(card)
+        val (card, new_deck) = deck.draw
+        val new_player_hand = player.getHand.addCard(card)
 
-        val updated_players: List[Player] = players.map({
+        val updated_players: List[PlayerInterface] = players.map({
           p => {
-            if (p == player) p.copy(hand = new_player_hand, money = new_balance, bet = new_bet, state = PlayerState.DoubledDown) else p
+            if (p == player)
+              Player(p.getName, new_player_hand, p.getSplitHand, new_balance, new_bet, PlayerState.DoubledDown)
+            else p
           }
         })
         copy(
@@ -170,10 +175,10 @@ case class Game(
     }
   }
 
-  override def startGame: Game = {
+  override def startGame: GameInterface = {
     val updated_players = players.map(
-      player =>
-        player.copy(state = PlayerState.Betting, hand = Hand())
+      p =>
+        Player(p.getName, Hand(), p.getSplitHand, p.getMoney, p.getBet, PlayerState.Betting)
     )
 
     copy(
@@ -184,23 +189,27 @@ case class Game(
     ).evaluate
   }
 
-  override def evaluate: Game = {
+  override def evaluate: GameInterface = {
     // Evaluate player states
-    val evaluated_players: List[Player] = players.map {
-      case player if player.state == PlayerState.Standing => player
-      case player if player.hand.isBust => player.copy(state = PlayerState.Busted)
-      case player if player.hand.hasBlackjack => player.copy(state = PlayerState.Blackjack)
+    val evaluated_players: List[PlayerInterface] = players.map {
+      case player if player.getState == PlayerState.Standing => player
+      case player if player.getHand.isBust =>
+        Player(player.getName, player.getHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Busted)
+      case player if player.getHand.hasBlackjack =>
+        Player(player.getName, player.getHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Busted)
       case player => player
     }
 
-    val evaluated_dealer: Dealer = dealer match {
-      case d if d.hand.isBust => d.copy(state = DealerState.Bust)
-      case d if d.hand.value >= 17 => d.copy(state = DealerState.Standing)
+    val evaluated_dealer: DealerInterface = dealer match {
+      case d if d.getHand.isBust =>
+        Dealer(d.getHand, DealerState.Bust)
+      case d if d.getHand.getHandValue >= 17 =>
+        Dealer(d.getHand, DealerState.Standing)
       case _ => dealer
     }
 
-    val any_playing = evaluated_players.exists(_.state == PlayerState.Playing)
-    val any_betting = evaluated_players.exists(_.state == PlayerState.Betting)
+    val any_playing = evaluated_players.exists(_.getState == PlayerState.Playing)
+    val any_betting = evaluated_players.exists(_.getState == PlayerState.Betting)
 
     state match {
       case GameState.Betting if !any_betting => deal.evaluate
@@ -208,7 +217,7 @@ case class Game(
       case GameState.Started if any_playing => {
         val current_player = evaluated_players(current_idx)
         val new_index =
-          if(current_player.state == PlayerState.Blackjack || current_player.state == PlayerState.Busted) {
+          if(current_player.getState == PlayerState.Blackjack || current_player.getState == PlayerState.Busted) {
             current_idx + 1
           } else {
             current_idx
@@ -217,25 +226,27 @@ case class Game(
         copy(current_idx = new_index, players = evaluated_players)
       }
 
-      case GameState.Started if !any_playing && evaluated_dealer.state != DealerState.Standing && evaluated_dealer.state != DealerState.Bust =>
+      case GameState.Started if !any_playing && evaluated_dealer.getState != DealerState.Standing && evaluated_dealer.getState != DealerState.Bust =>
         copy(dealer = evaluated_dealer).hitDealer.evaluate // Ensure evaluation continues after hitting dealer
 
       case GameState.Started
-        if !any_playing && (evaluated_dealer.state == DealerState.Bust || evaluated_dealer.state == DealerState.Standing) =>
-          val evaluated_players_bets = evaluated_players.map { player =>
-            player.state match {
-              case PlayerState.Blackjack if dealer.hand.hasBlackjack =>
-                player.copy(bet = 0, state = PlayerState.LOST)
+        if !any_playing && (evaluated_dealer.getState == DealerState.Bust || evaluated_dealer.getState == DealerState.Standing) =>
+          val evaluated_players_bets = evaluated_players.map { p =>
+            p.getState match {
+              case PlayerState.Blackjack if dealer.getHand.hasBlackjack =>
+                Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, 0, LOST)
               case PlayerState.Blackjack =>
-                player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
+                val money_after_winning = p.getMoney + p.getBet * 2
+                Player(p.getName, p.getHand, p.getSplitHand, money_after_winning, 0, WON)
               case PlayerState.Standing | PlayerState.DoubledDown
-                if dealer.hand.value >= player.hand.value && !dealer.hand.isBust =>
-                  player.copy(bet = 0, state = PlayerState.LOST)
+                if dealer.getHand.getHandValue >= p.getHand.getHandValue && !dealer.getHand.isBust =>
+                  Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, 0, LOST)
               case PlayerState.Standing | PlayerState.DoubledDown =>
-                player.copy(money = player.money + player.bet * 2, bet = 0, state = PlayerState.WON)
+                val money_after_winning = p.getMoney + p.getBet * 2
+                Player(p.getName, p.getHand, p.getSplitHand, money_after_winning, 0, WON)
               case PlayerState.Busted =>
-                player.copy(bet = 0, state = PlayerState.LOST)
-              case _ => player
+                Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, 0, LOST)
+              case _ => p
             }
           }
           copy(players = evaluated_players_bets, state = GameState.Evaluated, dealer = evaluated_dealer)
@@ -250,7 +261,7 @@ case class Game(
   override def getPlayerOptions: List[String] = {
     val baseOptions = List("exit")
 
-    val playerOpt: Option[Player] = players.lift(current_idx)
+    val playerOpt: Option[PlayerInterface] = players.lift(current_idx)
 
     val options = state match {
       case GameState.Initialized =>
@@ -263,8 +274,8 @@ case class Game(
         playerOpt match {
           case Some(player) =>
             baseOptions ++ List("stand") ++
-              (if (player.hand.canHit) List("hit") else Nil) ++
-              (if (player.hand.canDoubleDown && player.money >= player.bet) List("double (down)") else Nil)
+              (if (player.getHand.canHit) List("hit") else Nil) ++
+              (if (player.getHand.canDoubleDown && player.getMoney >= player.getBet) List("double (down)") else Nil)
           // ++ (if (player.hand.canSplit) List("split") else Nil)  // Uncomment if needed
           case None => baseOptions
         }
@@ -293,11 +304,11 @@ case class Game(
     val stringBuilder = new StringBuilder()
 
     // Dealer Box Centered
-    val dealerHand = if (dealer.hand.hand.length == 1) f"[* *] ${dealer.hand.toString()}" else f" ${dealer.hand.toString()} "
+    val dealerHand = if (dealer.getHand.length == 1) f"[* *] ${dealer.getHand.toString}" else f" ${dealer.getHand.toString} "
     val dealerValue = f"${
-      if (dealer.hand.isBust) "Busted"
-      else if (dealer.hand.hasBlackjack) "Blackjack"
-      else f"Value: ${dealer.hand.value}"
+      if (dealer.getHand.isBust) "Busted"
+      else if (dealer.getHand.hasBlackjack) "Blackjack"
+      else f"Value: ${dealer.getHand.getHandValue}"
     }"
 
     def centerText(text: String, width: Int): String = {
@@ -328,12 +339,12 @@ case class Game(
     val playerBoxes = players.map { player =>
       val playerBoxTop = if(players.indexOf(player) == current_idx) currentBoxTop else boxTop
 
-      val playerName  = s"Player: ${player.name.take(25)}"  // Truncate to 35 chars
-      val playerBank  = s"Bank: $$${player.money.toString.take(25)}"  // Truncate to 35 chars
-      val playerHand  = s"Hand: ${player.hand.toString.take(25)}"  // Truncate to 35 chars
-      val playerBet   = s"Bet: $$${player.bet.toString.take(25)}"  // Truncate to 35 chars
-      val playerValue = s"Value: ${player.hand.value.toString.take(25)}"  // Truncate to 35 chars
-      val playerState = s"State: ${player.state.toString.take(25)}"  // Truncate to 35 chars
+      val playerName  = s"Player: ${player.getName.take(25)}"  // Truncate to 35 chars
+      val playerBank  = s"Bank: $$${player.getMoney.toString.take(25)}"  // Truncate to 35 chars
+      val playerHand  = s"Hand: ${player.getHand.toString.take(25)}"  // Truncate to 35 chars
+      val playerBet   = s"Bet: $$${player.getBet.toString.take(25)}"  // Truncate to 35 chars
+      val playerValue = s"Value: ${player.getHand.getHandValue.toString.take(25)}"  // Truncate to 35 chars
+      val playerState = s"State: ${player.getState.toString.take(25)}"  // Truncate to 35 chars
 
       // Format each line inside the box
       val nameLine  = f"| $playerName%-31s |"
@@ -366,7 +377,7 @@ case class Game(
     stringBuilder.append(s"${reset}------------------------------------------------------\n")
 
     if (players.nonEmpty) {
-      stringBuilder.append(s"Current Player: ${players(current_idx).name}, State: ${players(current_idx).state}\n")
+      stringBuilder.append(s"Current Player: ${players(current_idx).getName}, State: ${players(current_idx).getState}\n")
     }
 
     stringBuilder.append("Options: ")

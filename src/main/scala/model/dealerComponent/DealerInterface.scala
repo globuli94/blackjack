@@ -1,8 +1,9 @@
 package model.dealerComponent
 
 import model.gameComponent.GameState
+import model.handComponent.HandInterface
 
 trait DealerInterface {
-  def getHand: Hand
+  def getHand: HandInterface
   def getState: DealerState
 }

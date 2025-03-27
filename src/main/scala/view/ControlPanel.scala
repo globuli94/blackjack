@@ -1,9 +1,9 @@
 package view
 
-import controller.controllerComponent.Controller
-import model.gameComponent.GameState.{Betting, Evaluated, Initialized, Started}
-import model.gameComponent.Game
-import model.playerComponent.Player
+import controller.controllerComponent.*
+import model.gameComponent.*
+import model.gameComponent.GameState.{Betting, Evaluated, Initialized}
+import model.playerComponent.*
 import util.{Event, Observer}
 
 import java.awt.Color
@@ -13,7 +13,7 @@ import scala.swing.{Action, BorderPanel, BoxPanel, Button, Dialog, Dimension, Fl
 
 case class ControlPanel(controller: Controller) extends FlowPanel {
   private val poolTableGreen = new Color(0x0e5932)
-  val player: Player = controller.game.players(controller.game.current_idx)
+  val player: PlayerInterface = controller.game.getPlayers(controller.game.getIndex)
 
   background = poolTableGreen
   private val border_color = java.awt.Color.WHITE
@@ -87,14 +87,14 @@ case class ControlPanel(controller: Controller) extends FlowPanel {
 
   contents += new FlowPanel() {
     background = poolTableGreen
-    controller.game.state match
+    controller.game.getState match
       case Betting =>
         contents += bet_button
         contents += leaveButton
-      case Started =>
+      case GameState.Started =>
         contents += stand_button
-        if (player.hand.canHit) contents += hit_button
-        if (player.hand.canDoubleDown) contents += double_down_button
+        if (player.getHand.canHit) contents += hit_button
+        if (player.getHand.canDoubleDown) contents += double_down_button
         contents += leaveButton
       case Evaluated =>
         contents += continue_button

@@ -11,17 +11,18 @@ trait GameInterface {
   def getDeck: DeckInterface
   def getState: GameState
   def getDealer: DealerInterface
-  
-  def createPlayer: Game
-  def leavePlayer(name: String): Game
-  def deal: Game
-  def hitDealer: Game
-  def hitPlayer: Game
-  def standPlayer: Game
-  def betPlayer: Game
-  def isValidBet: Boolean
-  def doubleDownPlayer: Game
-  def startGame: Game
-  def getPlayerOptions: Game
+
+  def evaluate: GameInterface
+  def createPlayer(name: String): GameInterface
+  def leavePlayer(name: String = ""): GameInterface
+  def deal: GameInterface
+  def hitDealer: GameInterface
+  def hitPlayer: GameInterface
+  def standPlayer: GameInterface
+  def betPlayer(amount: Int): GameInterface
+  def isValidBet(amount: Int): Boolean
+  def doubleDownPlayer: GameInterface
+  def startGame: GameInterface
+  def getPlayerOptions: List[String]
   def toString: String
 }
