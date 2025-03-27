@@ -1,15 +1,15 @@
 package model.handComponent
 
-import model.HandSate
+import model.HandState
 import model.cardComponent.CardInterface
 
-enum HandSate {
+enum HandState {
     case Play
     case Stand
 }
 
 // handles adding cards to hand and value logic -> bust, blackjack
-case class Hand(hand: List[CardInterface] = List.empty, state: HandSate = HandSate.Play) extends HandInterface {
+case class Hand(hand: List[CardInterface] = List.empty, state: HandState = HandState.Play) extends HandInterface {
 
     override def addCard(card: CardInterface): Hand = {
         return Hand(card :: hand)
