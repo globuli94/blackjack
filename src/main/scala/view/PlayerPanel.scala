@@ -1,7 +1,9 @@
 package view
 
-import model.PlayerState.{Betting, Idle, Playing, Standing}
-import model.{Card, Hand, Player}
+import model.playerComponent.PlayerState.{Betting, Idle, Playing, Standing}
+import model.cardComponent.Card
+import model.handComponent.Hand
+import model.playerComponent.Player
 import view.CardPanel
 
 import java.awt.Color

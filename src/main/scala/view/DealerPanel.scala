@@ -1,7 +1,8 @@
 package view
 
-import model.{Card, Dealer}
-import model.DealerState.{Bust, Dealing, Idle, Standing}
+import model.dealerComponent.DealerState.{Bust, Dealing, Idle, Standing}
+import model.cardComponent.Card
+import model.dealerComponent.Dealer
 
 import java.awt.Color
 import java.net.URL

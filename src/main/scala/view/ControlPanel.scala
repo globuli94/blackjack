@@ -1,8 +1,9 @@
 package view
 
 import controller.Controller
-import model.GameState.{Betting, Evaluated, Initialized, Started}
-import model.{Game, Player}
+import model.gameComponent.GameState.{Betting, Evaluated, Initialized, Started}
+import model.gameComponent.Game
+import model.playerComponent.Player
 import util.{Event, Observer}
 
 import java.awt.Color

@@ -1,6 +1,6 @@
 package controller
 
-import model.{Game, GameState}
+import model.gameComponent.{Game, GameState}
 import util.Event.invalidCommand
 import util.{Event, Observable, Observer}
 

@@ -1,4 +1,7 @@
-package model
+package model.handComponent
+
+import model.HandSate
+import model.cardComponent.CardInterface
 
 enum HandSate {
     case Play
@@ -6,14 +9,13 @@ enum HandSate {
 }
 
 // handles adding cards to hand and value logic -> bust, blackjack
+case class Hand(hand: List[CardInterface] = List.empty, state: HandSate = HandSate.Play) extends HandInterface {
 
-case class Hand(hand: List[Card] = List.empty, state: HandSate = HandSate.Play) {
-
-    def addCard(card: Card): Hand = {
+    override def addCard(card: CardInterface): Hand = {
         return Hand(card :: hand)
     }
 
-    def value: Int = {
+    override def value: Int = {
         // Calculate the total value assuming all Aces are 11
         val values = hand.map(_.value)
         var totalValue = values.sum
@@ -30,18 +32,17 @@ case class Hand(hand: List[Card] = List.empty, state: HandSate = HandSate.Play) 
         totalValue
     }
 
-    def isBust: Boolean = value > 21
-    def hasBlackjack: Boolean = value == 21
-
-    def canHit: Boolean = value < 21
-    def canDoubleDown: Boolean =
+    override def isBust: Boolean = value > 21
+    override def hasBlackjack: Boolean = value == 21
+    override def canHit: Boolean = value < 21
+    override def canDoubleDown: Boolean =
         (value == 9 || value == 10 || value == 11) && hand.length == 2
-    def canSplit: Boolean = hand.size == 2 && hand.head.rank == hand(1).rank
+    override def canSplit: Boolean = hand.size == 2 && hand.head.rank == hand(1).rank
 
     override def toString: String = {
         val stringBuilder = new StringBuilder()
         hand.foreach(card => {
-            stringBuilder.append(card.toString())
+            stringBuilder.append(card.toString)
         })
         stringBuilder.toString()
     }

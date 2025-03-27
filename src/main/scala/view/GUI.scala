@@ -1,8 +1,9 @@
 package view
 import util.{Event, Observer}
 import controller.Controller
-import model.GameState.{Evaluated, Initialized, Started}
-import model.{GameState, Player}
+import model.gameComponent.GameState.{Evaluated, Initialized, Started}
+import model.gameComponent.GameState
+import model.playerComponent.Player
 import util.Event.{AddPlayer, End, Split}
 
 import scala.swing.*

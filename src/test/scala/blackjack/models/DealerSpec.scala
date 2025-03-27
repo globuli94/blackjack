@@ -2,8 +2,10 @@ package blackjack.models
 
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-
 import model.*
+import model.cardComponent.Card
+import model.dealerComponent.{Dealer, DealerState}
+import model.handComponent.Hand
 
 class DealerSpec extends AnyWordSpec with Matchers {
 

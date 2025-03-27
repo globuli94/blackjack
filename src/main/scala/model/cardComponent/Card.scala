@@ -1,6 +1,6 @@
-package model
+package model.cardComponent
 
-case class Card(rank: String, suit: String) {
+case class Card(rank: String, suit: String) extends CardInterface {
     def value: Int = this.rank match {
         case "A" => 11
         case "K" | "Q" | "J" => 10

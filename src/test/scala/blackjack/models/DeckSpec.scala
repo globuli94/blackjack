@@ -4,9 +4,8 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.Queue
 import scala.util.Random
-
-import model.Deck
-import model.Card
+import model.cardComponent.Card
+import model.deckComponent.Deck
 
 class DeckSpec extends AnyWordSpec with Matchers {
 

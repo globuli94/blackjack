@@ -1,5 +1,5 @@
-import model.Game
 import controller.Controller
+import model.gameComponent.Game
 import view.{GUI, TUI}
 
 import scala.collection.immutable.LazyList.cons

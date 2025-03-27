@@ -1,15 +1,19 @@
-package model
+package model.gameComponent
 
-import model.DealerState.Standing
-import model.PlayerState.{Betting, Playing}
+import model.playerComponent.PlayerState
+import model.dealerComponent.DealerState
+import model.dealerComponent.{DealerInterfaceDealerState}
+import model.deckComponent.DeckInterface
+import model.handComponent.HandInterface
+import model.playerComponent.PlayerInterface
 
 enum GameState {
   case Initialized, Betting, Started, Evaluated
 }
 
-case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) {
+case class Game(current_idx: Int = 0, players: List[PlayerInterface] = List.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) extends GameInterface {
 
-  def createPlayer(name: String): Game = {
+  override def createPlayer(name: String): Game = {
     if (players.length < 4) {
       this.copy(players = Player(name) :: players).evaluate
     } else {
@@ -17,7 +21,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     }
   }
 
-  def leavePlayer(name: String = ""): Game = {
+  override def leavePlayer(name: String = ""): Game = {
     val idx = if (current_idx == players.length - 1) 0 else current_idx
 
     if(players.length == 1) {
@@ -30,7 +34,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
   // performs the initial deal -> dealer 1 card, all players 2 cards, player state set to playing
-  def deal: Game = {
+  override def deal: Game = {
     val shuffled_deck = deck.shuffle
 
     val (card, deck_after_dealer) = shuffled_deck.draw()
@@ -60,14 +64,14 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
   // hits dealer if possible, else changes dealers state to bust or standing
-  def hitDealer: Game = {
+  override def hitDealer: Game = {
       val (card, new_deck) = deck.draw()
       val new_dealer = dealer.copy(hand = dealer.hand.addCard(card))
       copy(dealer = new_dealer, deck = new_deck).evaluate
   }
 
   // hits current player and sets player state to blackjack playing or busted, updates deck
-  def hitPlayer: Game = {
+  override def hitPlayer: Game = {
     players.lift(current_idx) match {
     case Some(player) =>
       val (card, new_deck) = deck.draw()
@@ -90,7 +94,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
   // stands current player = updates player state to standing
-  def standPlayer: Game = {
+  override def standPlayer: Game = {
     players.lift(current_idx) match {
       case Some(player) =>
         val updated_players: List[Player] = players.map({
@@ -107,7 +111,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
   // subtracts amount of money from player, updates money, bet and player state to playing
-  def betPlayer(amount: Int): Game = {
+  override def betPlayer(amount: Int): Game = {
     players.lift(current_idx) match {
       case Some(player) =>
         val new_balance = player.money - amount
@@ -126,7 +130,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
   // checks if the bet is valid
-  def isValidBet(amount: Int): Boolean = {
+  override def isValidBet(amount: Int): Boolean = {
     players.lift(current_idx) match {
       case Some(player) =>
         amount <= player.money
@@ -134,7 +138,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     }
   }
 
-  def doubleDownPlayer: Game = {
+  override def doubleDownPlayer: Game = {
     players.lift(current_idx) match {
       case Some(player) =>
         val new_bet = player.bet * 2
@@ -157,7 +161,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     }
   }
 
-  def startGame: Game = {
+  override def startGame: Game = {
     val updated_players = players.map(
       player =>
         player.copy(state = PlayerState.Betting, hand = Hand())
@@ -171,7 +175,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
     ).evaluate
   }
 
-  def evaluate: Game = {
+  override def evaluate: Game = {
     // Evaluate player states
     val evaluated_players: List[Player] = players.map {
       case player if player.state == PlayerState.Standing => player
@@ -234,7 +238,7 @@ case class Game(current_idx: Int = 0, players: List[Player] = List.empty, deck: 
   }
 
 
-  def getPlayerOptions: List[String] = {
+  override def getPlayerOptions: List[String] = {
     val baseOptions = List("exit")
 
     val playerOpt: Option[Player] = players.lift(current_idx)
