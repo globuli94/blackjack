@@ -2,7 +2,9 @@ package blackjack.models
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import model._
+import model.*
+import model.cardComponent.Card
+import model.handComponent.Hand
 
 class HandSpec extends AnyWordSpec with Matchers {
 
@@ -15,9 +17,9 @@ class HandSpec extends AnyWordSpec with Matchers {
     }
 
     "calculate the correct value for different hands" in {
-      Hand(List(Card("10", "Hearts"), Card("7", "Diamonds"))).value shouldBe 17
-      Hand(List(Card("A", "Hearts"), Card("7", "Diamonds"))).value shouldBe 18  // Ace as 11
-      Hand(List(Card("A", "Hearts"), Card("A", "Diamonds"), Card("10", "Clubs"))).value shouldBe 12  // Aces as 1
+      Hand(List(Card("10", "Hearts"), Card("7", "Diamonds"))).getHandValue shouldBe 17
+      Hand(List(Card("A", "Hearts"), Card("7", "Diamonds"))).getHandValue shouldBe 18  // Ace as 11
+      Hand(List(Card("A", "Hearts"), Card("A", "Diamonds"), Card("10", "Clubs"))).getHandValue shouldBe 12  // Aces as 1
     }
 
     "identify if the hand is bust or has blackjack" in {

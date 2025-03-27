@@ -1,7 +1,11 @@
-package model
+package model.cardComponent
 
-case class Card(rank: String, suit: String) {
-    def value: Int = this.rank match {
+case class Card(rank: String, suit: String) extends CardInterface {
+
+    override def getRank: String = rank
+    override def getSuit: String = suit
+
+    override def getValue: Int = this.rank match {
         case "A" => 11
         case "K" | "Q" | "J" => 10
         case "blank" => 0

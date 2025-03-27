@@ -1,17 +1,20 @@
 package view
+
+import controller.controllerComponent.ControllerInterface
 import util.{Event, Observer}
-import controller.Controller
-import model.GameState.{Evaluated, Initialized, Started}
-import model.{GameState, Player}
+import model.gameComponent.*
+import model.gameComponent.GameState.Initialized
+import model.playerComponent.*
 import util.Event.{AddPlayer, End, Split}
 
 import scala.swing.*
 import scala.swing.MenuBar.NoMenuBar.revalidate
-import javax.swing.ImageIcon
+import javax.swing.{ImageIcon, WindowConstants}
 import java.awt.{Color, Font, Graphics2D, RenderingHints}
 import java.net.URL
+import scala.swing.event.WindowClosing
 
-class GUI(controller: Controller) extends Frame with Observer {
+class GUI(controller: ControllerInterface) extends Frame with Observer {
   private val poolTableGreen = new Color(0x0e5932)
   background = poolTableGreen
   private val width = 1200
@@ -24,6 +27,15 @@ class GUI(controller: Controller) extends Frame with Observer {
   visible = true
   centerOnScreen()
   controller.add(this)
+
+  peer.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
+  // Listen to the WindowClosing event (triggered by the close button)
+  reactions += {
+    case WindowClosing(_) =>
+      // Call controller.exit() when the window close button is clicked
+      controller.exit() // Handle exit logic in the controller
+      sys.exit(0) // Exit the application
+  }
 
   private val button_dimension = new Dimension(200,50)
 
@@ -98,9 +110,9 @@ class GUI(controller: Controller) extends Frame with Observer {
         maximumSize = new Dimension(220,400)
 
         contents += Swing.HStrut(5)
-        if (controller.game.state == Initialized && controller.game.players.nonEmpty) contents += start_button
+        if (controller.getGame.getState == GameState.Initialized && controller.getGame.getPlayers.nonEmpty) contents += start_button
         contents += Swing.HStrut(5)
-        if(controller.game.state == GameState.Initialized) contents += add_player_button
+        if(controller.getGame.getState == GameState.Initialized) contents += add_player_button
         contents += Swing.HStrut(5)
         contents += reset_button
 
@@ -117,8 +129,8 @@ class GUI(controller: Controller) extends Frame with Observer {
     maximumSize = new Dimension(980, 400)
     background = poolTableGreen
     contents.clear() // Remove old players
-    for ((player, index) <- controller.game.players.zipWithIndex) {
-      val panel = if (controller.game.current_idx == index) {
+    for ((player, index) <- controller.getGame.getPlayers.zipWithIndex) {
+      val panel = if (controller.getGame.getIndex == index) {
         new PlayerPanel(player, true)
       } else {
         new PlayerPanel(player, false)
@@ -134,7 +146,7 @@ class GUI(controller: Controller) extends Frame with Observer {
     background = poolTableGreen
     contents.clear() // Remove old players
 
-    val player: Player = controller.game.players(controller.game.current_idx)
+    val player: PlayerInterface = controller.getGame.getPlayers(controller.getGame.getIndex)
 
     contents += ControlPanel(controller)
   }
@@ -150,7 +162,7 @@ class GUI(controller: Controller) extends Frame with Observer {
 
   private def rebuildUI(): Unit = {
     val current_player =
-      if (controller.game.players.nonEmpty) controller.game.players(controller.game.current_idx)
+      if (controller.getGame.getPlayers.nonEmpty) controller.getGame.getPlayers(controller.getGame.getIndex)
 
 
     contents = new BoxPanel(Orientation.Horizontal) {
@@ -159,9 +171,9 @@ class GUI(controller: Controller) extends Frame with Observer {
       contents +=
         new BorderPanel() {
           background = poolTableGreen
-          if(controller.game.dealer.hand.hand.nonEmpty) add(DealerPanel(controller.game.dealer), BorderPanel.Position.North)
-          if(controller.game.players.nonEmpty) add(player_panel, BorderPanel.Position.Center)
-          if(controller.game.players.nonEmpty) add(player_control_panel, BorderPanel.Position.South)
+          if(controller.getGame.getDealer.getHand.getCards.nonEmpty) add(DealerPanel(controller.getGame.getDealer), BorderPanel.Position.North)
+          if(controller.getGame.getPlayers.nonEmpty) add(player_panel, BorderPanel.Position.Center)
+          if(controller.getGame.getPlayers.nonEmpty) add(player_control_panel, BorderPanel.Position.South)
           //border = Swing.EmptyBorder(10, 0 , 0, 10)
         }
       border = Swing.EmptyBorder(10, 10, 10, 10)

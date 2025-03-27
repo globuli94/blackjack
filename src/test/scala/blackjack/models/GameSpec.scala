@@ -2,19 +2,31 @@ package blackjack.models
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import model.{DealerState, *}
-import model.DealerState.Bust
-import model.GameState.{Evaluated, Initialized, Started}
-import model.PlayerState.*
+import model.*
+import model.dealerComponent.DealerState.Bust
+import model.gameComponent.GameState.{Evaluated, Initialized, Started}
+import model.playerComponent.PlayerState.*
+import model.cardComponent.Card
+import model.dealerComponent.{Dealer, DealerState}
+import model.deckComponent.Deck
+import model.gameComponent.{Game, GameState}
+import model.handComponent.Hand
+import model.playerComponent.{Player, PlayerState}
 
 class GameSpec extends AnyWordSpec with Matchers {
 
   "A Game" should {
 
+    "initialize a game" in {
+      val game = Game()
+
+      game.initialize shouldEqual(Game())
+    }
+
     "initially have no players and a new dealer" in {
       val game = Game()
 
-      game.players shouldBe empty
+      game.getPlayers shouldBe empty
       game.dealer should equal(new Dealer())
       game.state shouldBe GameState.Initialized
     }
@@ -27,8 +39,8 @@ class GameSpec extends AnyWordSpec with Matchers {
       val game4 = game3.createPlayer("David")
       val game5 = game4.createPlayer("Eve") // Should not add a 5th player
 
-      game5.players.size shouldBe 4
-      game5.players.map(_.name) should contain allElementsOf List("Alice", "Bob", "Charlie", "David")
+      game5.getPlayers.size shouldBe 4
+      game5.getPlayers.map(_.getName) should contain allElementsOf List("Alice", "Bob", "Charlie", "David")
     }
 
     "correctly remove the current player and adjust index" in {
@@ -39,12 +51,12 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.leavePlayer() // Should remove Charlie
 
-      updatedGame.players should not contain player3
-      updatedGame.players should contain allElementsOf List(player1, player2)
-      updatedGame.current_idx shouldBe 0 // Index resets
+      updatedGame.getPlayers should not contain player3
+      updatedGame.getPlayers should contain allElementsOf List(player1, player2)
+      updatedGame.getIndex shouldBe 0 // Index resets
 
       val empty_game = Game(players = List(player1)).leavePlayer()
-      empty_game.players.length shouldBe 0
+      empty_game.getPlayers.length shouldBe 0
     }
 
     "correctly remove a player by name" in {
@@ -54,14 +66,14 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val newGame = game.leavePlayer("Player1")
 
-      newGame.players should contain theSameElementsAs List(player2)
+      newGame.getPlayers should contain theSameElementsAs List(player2)
     }
 
     "deal cards to each player and the dealer" in {
       val game = Game().createPlayer("Player1")
       val dealtGame = game.deal
 
-      dealtGame.state shouldBe GameState.Started
+      dealtGame.getState shouldBe GameState.Started
     }
 
     "dealer should hit when hand value is less than 17" in {
@@ -69,7 +81,7 @@ class GameSpec extends AnyWordSpec with Matchers {
       val game = Game().copy(dealer = Dealer(initialDealerHand)).startGame // Next card = 7
 
       val updatedGame = game.hitDealer
-      updatedGame.dealer.hand.hand.length == 3
+      updatedGame.getDealer.getHand.length == 3
     }
 
 
@@ -82,8 +94,8 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.hitPlayer
 
-      updatedGame.players.head.hand.hand.length == 3
-      updatedGame.players(1).hand.hand.length == 2
+      updatedGame.getPlayers.head.getHand.length == 3
+      updatedGame.getPlayers(1).getHand.length == 2
     }
 
     "return input game when acting on empty game" in {
@@ -102,7 +114,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.hitPlayer
 
-      updatedGame.players.head.state shouldBe PlayerState.Busted
+      updatedGame.getPlayers.head.getState shouldBe PlayerState.Busted
     }
 
     "mark a player as blackjack when they have 21" in {
@@ -112,7 +124,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.evaluate
 
-      updatedGame.players.head.state shouldBe PlayerState.Blackjack
+      updatedGame.getPlayers.head.getState shouldBe PlayerState.Blackjack
     }
 
     "allow a player to stand and leave all other players the same" in {
@@ -122,8 +134,8 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.standPlayer
 
-      updatedGame.players.head.state shouldBe PlayerState.Standing
-      updatedGame.players(1).state shouldBe PlayerState.Playing
+      updatedGame.getPlayers.head.getState shouldBe PlayerState.Standing
+      updatedGame.getPlayers(1).getState shouldBe PlayerState.Playing
     }
 
     "allow a player to bet and subtract money correctly" in {
@@ -139,10 +151,10 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       updatedGame should equal(game)
 
-      updatedGame_with_1.current_idx shouldBe 0
+      updatedGame_with_1.getIndex shouldBe 0
 
-      updatedGame_with_2.players.head.state shouldBe PlayerState.Playing
-      updatedGame_with_2.current_idx shouldBe game_with_2.current_idx + 1
+      updatedGame_with_2.getPlayers.head.getState shouldBe PlayerState.Playing
+      updatedGame_with_2.getIndex shouldBe game_with_2.getIndex + 1
     }
 
     "not allow a player to bet more than they have" in {
@@ -175,7 +187,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val bet_game = game.betPlayer(100)
 
-      bet_game.players(1).bet should be(0)
+      bet_game.getPlayers(1).getBet should be(0)
     }
 
     "allow a player to double down" in {
@@ -190,8 +202,8 @@ class GameSpec extends AnyWordSpec with Matchers {
       val updatedGame_with_2 = game_with_2.doubleDownPlayer
 
       updatedGame should equal(game)
-      updatedGame_with_2.players.head.state shouldBe PlayerState.DoubledDown
-      updatedGame_with_2.players(1) should equal(player2)
+      updatedGame_with_2.getPlayers.head.getState shouldBe PlayerState.DoubledDown
+      updatedGame_with_2.getPlayers(1) should equal(player2)
 
     }
 
@@ -202,41 +214,46 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       "set index correctly if player has blackjack" in {
         val player = Player("Alice", state = Blackjack)
-        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, game.getDealer, GameState.Started).evaluate
 
-        evaluated_game.current_idx shouldBe(game.current_idx)
+        evaluated_game.getIndex shouldBe(game.getIndex)
       }
 
       "set index correctly if player has busted" in {
         val player = Player("Alice", state = Busted)
-        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, game.getDealer, GameState.Started).evaluate
 
-        evaluated_game.current_idx shouldBe (game.current_idx)
+        evaluated_game.getIndex shouldBe (game.getIndex)
       }
 
       "eval correctly if player and dealer have blackjack" in {
         val player = Player("Alice", state = Blackjack)
         val dealer = Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("K", "Hearts"))))
 
-        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.players.head.state shouldBe(PlayerState.LOST)
+        evaluated_game.getPlayers.head.getState shouldBe(PlayerState.LOST)
       }
 
       "eval correctly if player has blackjack" in {
         val player = Player("Alice", state = Blackjack)
         val dealer = Dealer(hand = Hand(hand = List(Card("7", "Hearts"), Card("10", "Hearts"))))
 
-        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.players.head.state shouldBe (PlayerState.WON)
+        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.WON)
       }
 
       "eval correctly if player is bust" in {
         val player = Player("Alice", state = Busted)
-        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, game.getDealer, GameState.Started).evaluate
 
-        evaluated_game.players.head.state shouldBe (PlayerState.LOST)
+        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.LOST)
       }
 
       "eval correctly if player has lost standing" in {
@@ -244,9 +261,10 @@ class GameSpec extends AnyWordSpec with Matchers {
         val dealer =
           Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
 
-        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.players.head.state shouldBe (PlayerState.LOST)
+        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.LOST)
       }
 
       "eval correctly if player has won standing" in {
@@ -255,25 +273,28 @@ class GameSpec extends AnyWordSpec with Matchers {
         val dealer =
           Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
 
-        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.players.head.state shouldBe (PlayerState.WON)
+        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.WON)
       }
 
       "eval correctly if player has won double down" in {
         val player = Player("Alice", state = DoubledDown, hand = Hand(List(Card("10", "Hearts"), Card("10", "Hearts"))))
         val dealer = Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))))
 
-        val evaluated_game = game.copy(players = List(player), state = Started, dealer = dealer).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.players.head.state shouldBe (PlayerState.WON)
+        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.WON)
       }
 
       "return player if any other player state" in {
         val player = Player("Alice", state = PlayerState.LOST)
-        val evaluated_game = game.copy(players = List(player), state = Started).evaluate
+        val evaluated_game =
+          Game(game.getIndex, List(player), game.getDeck, game.getDealer, GameState.Started).evaluate
 
-        evaluated_game.players.head should equal(player)
+        evaluated_game.getPlayers.head should equal(player)
       }
     }
 
@@ -370,7 +391,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val newGame = game.evaluate
 
-      newGame.state shouldBe GameState.Initialized
+      newGame.getState shouldBe GameState.Initialized
     }
   }
 

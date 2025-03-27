@@ -1,18 +1,20 @@
-package controller
+package controller.controllerComponent
 
-import model.{Game, GameState}
+import model.gameComponent.{GameInterface, GameState}
 import util.Event.invalidCommand
 import util.{Event, Observable, Observer}
 
-case class Controller(var game: Game) extends Observable {
+case class Controller(var game: GameInterface) extends ControllerInterface with Observable {
 
-  def initializeGame(): Unit = {
-    game = Game()
+  override def getGame: GameInterface = game
+
+  override def initializeGame(): Unit = {
+    game = game.initialize
     notifyObservers(Event.Start)
   }
 
-  def startGame(): Unit = {
-    if ((game.state == GameState.Initialized || game.state == GameState.Evaluated) && game.players.nonEmpty) {
+  override def startGame(): Unit = {
+    if ((game.getState == GameState.Initialized || game.getState == GameState.Evaluated) && game.getPlayers.nonEmpty) {
       game = game.startGame
       notifyObservers(Event.Start)
     } else {
@@ -20,9 +22,9 @@ case class Controller(var game: Game) extends Observable {
     }
   }
 
-  def addPlayer(name: String): Unit = {
-    if (game.state == GameState.Initialized || game.state == GameState.Evaluated) {
-      if(game.players.exists(_.name == name)) {
+  override def addPlayer(name: String): Unit = {
+    if (game.getState == GameState.Initialized || game.getState == GameState.Evaluated) {
+      if(game.getPlayers.exists(_.getName == name)) {
         notifyObservers(Event.errPlayerNameExists)
       } else {
         game = game.createPlayer(name)
@@ -33,8 +35,8 @@ case class Controller(var game: Game) extends Observable {
     }
   }
 
-  def leavePlayer(): Unit = {
-    if(game.players.nonEmpty) {
+  override def leavePlayer(): Unit = {
+    if(game.getPlayers.nonEmpty) {
         game = game.leavePlayer()
         notifyObservers(Event.leavePlayer)
     } else {
@@ -42,9 +44,9 @@ case class Controller(var game: Game) extends Observable {
     }
   }
 
-  def hitNextPlayer(): Unit = {
-    val player = game.players(game.current_idx)
-    if (player.hand.canHit && game.state == GameState.Started) {
+  override def hitNextPlayer(): Unit = {
+    val player = game.getPlayers(game.getIndex)
+    if (player.getHand.canHit && game.getState == GameState.Started) {
       game = game.hitPlayer
       notifyObservers(Event.hitNextPlayer)
     } else {
@@ -52,8 +54,8 @@ case class Controller(var game: Game) extends Observable {
     }
   }
 
-  def standNextPlayer(): Unit = {
-    if (game.state == GameState.Started) {
+  override def standNextPlayer(): Unit = {
+    if (game.getState == GameState.Started) {
       game = game.standPlayer
       notifyObservers(Event.standNextPlayer)
     } else {
@@ -61,10 +63,10 @@ case class Controller(var game: Game) extends Observable {
     }
   }
 
-  def doubleDown(): Unit = {
-    val player = game.players(game.current_idx)
+  override def doubleDown(): Unit = {
+    val player = game.getPlayers(game.getIndex)
 
-    if (game.state == GameState.Started && player.hand.canDoubleDown && player.bet <= player.money) {
+    if (game.getState == GameState.Started && player.getHand.canDoubleDown && player.getBet <= player.getMoney) {
       game = game.doubleDownPlayer
       notifyObservers(Event.doubleDown)
     } else {
@@ -72,8 +74,8 @@ case class Controller(var game: Game) extends Observable {
     }
   }
 
-  def bet(amount: String): Unit = {
-    if (game.state == GameState.Betting) {
+  override def bet(amount: String): Unit = {
+    if (game.getState == GameState.Betting) {
       try {
         if (game.isValidBet(amount.toInt) && amount.toInt > 0) {
           game = game.betPlayer(amount.toInt)
@@ -89,7 +91,7 @@ case class Controller(var game: Game) extends Observable {
     }
   }
 
-  def exit(): Unit = {
+  override def exit(): Unit = {
     sys.exit(0)
   }
 
