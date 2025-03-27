@@ -11,9 +11,9 @@ import javax.swing.BorderFactory
 import javax.swing.border.TitledBorder
 import scala.swing.{Action, BorderPanel, BoxPanel, Button, Dialog, Dimension, FlowPanel, Font, Orientation, Swing, TextField, Button as player}
 
-case class ControlPanel(controller: Controller) extends FlowPanel {
+case class ControlPanel(controller: ControllerInterface) extends FlowPanel {
   private val poolTableGreen = new Color(0x0e5932)
-  val player: PlayerInterface = controller.game.getPlayers(controller.game.getIndex)
+  val player: PlayerInterface = controller.getGame.getPlayers(controller.getGame.getIndex)
 
   background = poolTableGreen
   private val border_color = java.awt.Color.WHITE
@@ -87,7 +87,7 @@ case class ControlPanel(controller: Controller) extends FlowPanel {
 
   contents += new FlowPanel() {
     background = poolTableGreen
-    controller.game.getState match
+    controller.getGame.getState match
       case Betting =>
         contents += bet_button
         contents += leaveButton

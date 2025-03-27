@@ -1,17 +1,19 @@
 package controller.controllerComponent
 
-import model.gameComponent.{Game, GameInterface, GameState}
+import model.gameComponent.{GameInterface, GameState}
 import util.Event.invalidCommand
 import util.{Event, Observable, Observer}
 
 case class Controller(var game: GameInterface) extends ControllerInterface with Observable {
 
-  def initializeGame(): Unit = {
-    game = Game()
+  override def getGame: GameInterface = game
+
+  override def initializeGame(): Unit = {
+    game = game.initialize
     notifyObservers(Event.Start)
   }
 
-  def startGame(): Unit = {
+  override def startGame(): Unit = {
     if ((game.getState == GameState.Initialized || game.getState == GameState.Evaluated) && game.getPlayers.nonEmpty) {
       game = game.startGame
       notifyObservers(Event.Start)
@@ -20,7 +22,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
     }
   }
 
-  def addPlayer(name: String): Unit = {
+  override def addPlayer(name: String): Unit = {
     if (game.getState == GameState.Initialized || game.getState == GameState.Evaluated) {
       if(game.getPlayers.exists(_.getName == name)) {
         notifyObservers(Event.errPlayerNameExists)
@@ -33,7 +35,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
     }
   }
 
-  def leavePlayer(): Unit = {
+  override def leavePlayer(): Unit = {
     if(game.getPlayers.nonEmpty) {
         game = game.leavePlayer()
         notifyObservers(Event.leavePlayer)
@@ -42,7 +44,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
     }
   }
 
-  def hitNextPlayer(): Unit = {
+  override def hitNextPlayer(): Unit = {
     val player = game.getPlayers(game.getIndex)
     if (player.getHand.canHit && game.getState == GameState.Started) {
       game = game.hitPlayer
@@ -52,7 +54,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
     }
   }
 
-  def standNextPlayer(): Unit = {
+  override def standNextPlayer(): Unit = {
     if (game.getState == GameState.Started) {
       game = game.standPlayer
       notifyObservers(Event.standNextPlayer)
@@ -61,7 +63,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
     }
   }
 
-  def doubleDown(): Unit = {
+  override def doubleDown(): Unit = {
     val player = game.getPlayers(game.getIndex)
 
     if (game.getState == GameState.Started && player.getHand.canDoubleDown && player.getBet <= player.getMoney) {
@@ -72,7 +74,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
     }
   }
 
-  def bet(amount: String): Unit = {
+  override def bet(amount: String): Unit = {
     if (game.getState == GameState.Betting) {
       try {
         if (game.isValidBet(amount.toInt) && amount.toInt > 0) {
@@ -89,7 +91,7 @@ case class Controller(var game: GameInterface) extends ControllerInterface with 
     }
   }
 
-  def exit(): Unit = {
+  override def exit(): Unit = {
     sys.exit(0)
   }
 

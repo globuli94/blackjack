@@ -1,6 +1,10 @@
 package controller.controllerComponent
 
-trait ControllerInterface {
+import model.gameComponent.GameInterface
+import util.Observable
+
+trait ControllerInterface extends Observable {
+  def getGame: GameInterface
   def initializeGame(): Unit
   def startGame(): Unit
   def addPlayer(name: String): Unit

@@ -12,6 +12,7 @@ trait GameInterface {
   def getState: GameState
   def getDealer: DealerInterface
 
+  def initialize: GameInterface
   def evaluate: GameInterface
   def createPlayer(name: String): GameInterface
   def leavePlayer(name: String = ""): GameInterface

@@ -9,6 +9,9 @@ case class Deck(deck: Queue[CardInterface] = Queue.empty) extends DeckInterface 
   private val suits = List("Hearts", "Diamonds", "Clubs", "Spades")
   private val ranks = List("2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A")
 
+  override def length: Int = deck.length
+  override def unique_cards: Int = deck.distinct.size
+
   // Returns a new deck with freshly shuffled cards
   override def shuffle: DeckInterface = {
     val cardList = ranks.flatMap(rank => suits.map(suit => Card(rank, suit)))

@@ -32,6 +32,8 @@ case class Game(
     }
   }
 
+  override def initialize: GameInterface = Game()
+
   override def leavePlayer(name: String = ""): GameInterface = {
     val idx = if (current_idx == players.length - 1) 0 else current_idx
 
@@ -196,7 +198,7 @@ case class Game(
       case player if player.getHand.isBust =>
         Player(player.getName, player.getHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Busted)
       case player if player.getHand.hasBlackjack =>
-        Player(player.getName, player.getHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Busted)
+        Player(player.getName, player.getHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Blackjack)
       case player => player
     }
 
