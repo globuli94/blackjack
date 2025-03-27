@@ -1,4 +1,4 @@
-import controller.Controller
+import controller.controllerComponent.Controller
 import model.gameComponent.Game
 import view.{GUI, TUI}
 

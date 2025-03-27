@@ -1,5 +1,6 @@
 package view
-import controller.Controller
+
+import controller.controllerComponent.Controller
 import util.{Event, Observer}
 
 import scala.util.{Failure, Success, Try}

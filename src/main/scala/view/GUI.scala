@@ -1,6 +1,7 @@
 package view
+
+import controller.controllerComponent.Controller
 import util.{Event, Observer}
-import controller.Controller
 import model.gameComponent.GameState.{Evaluated, Initialized, Started}
 import model.gameComponent.GameState
 import model.playerComponent.Player

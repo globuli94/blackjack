@@ -1,6 +1,6 @@
 package view
 
-import controller.Controller
+import controller.controllerComponent.Controller
 import model.gameComponent.GameState.{Betting, Evaluated, Initialized, Started}
 import model.gameComponent.Game
 import model.playerComponent.Player

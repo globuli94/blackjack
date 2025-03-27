@@ -1,11 +1,11 @@
 package model.deckComponent
 
-import model.cardComponent.Card
+import model.cardComponent.{Card, CardInterface}
 
 import scala.collection.immutable.Queue
 import scala.util.Random
 
-case class Deck(deck: Queue[Card] = Queue.empty) extends DeckInterface {
+case class Deck(deck: Queue[CardInterface] = Queue.empty) extends DeckInterface {
   private val suits = List("Hearts", "Diamonds", "Clubs", "Spades")
   private val ranks = List("2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A")
 

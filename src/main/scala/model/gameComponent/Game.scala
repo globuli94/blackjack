@@ -1,18 +1,27 @@
 package model.gameComponent
 
-import model.playerComponent.PlayerState
-import model.dealerComponent.DealerState
-import model.dealerComponent.{DealerInterfaceDealerState}
-import model.deckComponent.DeckInterface
-import model.handComponent.HandInterface
-import model.playerComponent.PlayerInterface
+import model.dealerComponent.*
+import model.deckComponent.*
+import model.handComponent.*
+import model.playerComponent.*
 
 enum GameState {
   case Initialized, Betting, Started, Evaluated
 }
 
-case class Game(current_idx: Int = 0, players: List[PlayerInterface] = List.empty, deck: Deck = new Deck(), dealer: Dealer = new Dealer(), state: GameState = GameState.Initialized) extends GameInterface {
+case class Game(
+                 current_idx: Int = 0,
+                 players: List[PlayerInterface] = List.empty,
+                 deck: DeckInterface = Deck(),
+                 dealer: DealerInterface = Dealer(),
+                 state: GameState = GameState.Initialized) extends GameInterface {
 
+  override def getIndex: Int = current_idx
+  override def getPlayers: List[PlayerInterface] = players
+  override def getDeck: DeckInterface = deck
+  override def getState: GameState = state
+  override def getDealer: DealerInterface = dealer
+  
   override def createPlayer(name: String): Game = {
     if (players.length < 4) {
       this.copy(players = Player(name) :: players).evaluate

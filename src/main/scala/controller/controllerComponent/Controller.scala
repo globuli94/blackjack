@@ -1,10 +1,10 @@
-package controller
+package controller.controllerComponent
 
-import model.gameComponent.{Game, GameState}
+import model.gameComponent.{Game, GameInterface, GameState}
 import util.Event.invalidCommand
 import util.{Event, Observable, Observer}
 
-case class Controller(var game: Game) extends Observable {
+case class Controller(var game: GameInterface) extends ControllerInterface with Observable {
 
   def initializeGame(): Unit = {
     game = Game()
@@ -12,7 +12,7 @@ case class Controller(var game: Game) extends Observable {
   }
 
   def startGame(): Unit = {
-    if ((game.state == GameState.Initialized || game.state == GameState.Evaluated) && game.players.nonEmpty) {
+    if ((game.getState == GameState.Initialized || game.getState == GameState.Evaluated) && game.getPlayers.nonEmpty) {
       game = game.startGame
       notifyObservers(Event.Start)
     } else {
@@ -21,8 +21,8 @@ case class Controller(var game: Game) extends Observable {
   }
 
   def addPlayer(name: String): Unit = {
-    if (game.state == GameState.Initialized || game.state == GameState.Evaluated) {
-      if(game.players.exists(_.name == name)) {
+    if (game.getState == GameState.Initialized || game.getState == GameState.Evaluated) {
+      if(game.getPlayers.exists(_.getName == name)) {
         notifyObservers(Event.errPlayerNameExists)
       } else {
         game = game.createPlayer(name)
@@ -34,7 +34,7 @@ case class Controller(var game: Game) extends Observable {
   }
 
   def leavePlayer(): Unit = {
-    if(game.players.nonEmpty) {
+    if(game.getPlayers.nonEmpty) {
         game = game.leavePlayer()
         notifyObservers(Event.leavePlayer)
     } else {
@@ -43,8 +43,8 @@ case class Controller(var game: Game) extends Observable {
   }
 
   def hitNextPlayer(): Unit = {
-    val player = game.players(game.current_idx)
-    if (player.hand.canHit && game.state == GameState.Started) {
+    val player = game.getPlayers(game.getIndex)
+    if (player.getHand.canHit && game.state == GameState.Started) {
       game = game.hitPlayer
       notifyObservers(Event.hitNextPlayer)
     } else {

@@ -1,6 +1,17 @@
 package model.gameComponent
 
+import model.dealerComponent.DealerInterface
+import model.deckComponent.DeckInterface
+import model.playerComponent.PlayerInterface
+
 trait GameInterface {
+  
+  def getIndex: Int
+  def getPlayers: List[PlayerInterface]
+  def getDeck: DeckInterface
+  def getState: GameState
+  def getDealer: DealerInterface
+  
   def createPlayer: Game
   def leavePlayer(name: String): Game
   def deal: Game
