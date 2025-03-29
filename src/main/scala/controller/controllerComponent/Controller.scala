@@ -1,10 +1,11 @@
 package controller.controllerComponent
 
 import com.google.inject.Inject
-
 import model.gameComponent.{GameInterface, GameState}
 import util.Event.invalidCommand
 import util.{Event, Observable, Observer}
+import model.fileIOComponent.FileIOInterface
+import model.fileIOComponent.JSON.FileIOJSON
 
 case class Controller @Inject (var game: GameInterface) extends ControllerInterface with Observable {
 
@@ -13,6 +14,7 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
   override def initializeGame(): Unit = {
     game = game.initialize
     notifyObservers(Event.Start)
+    FileIOJSON().save(game)
   }
 
   override def startGame(): Unit = {
@@ -22,6 +24,7 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
     } else {
       notifyObservers(Event.invalidCommand)
     }
+    FileIOJSON().save(game)
   }
 
   override def addPlayer(name: String): Unit = {
@@ -35,6 +38,7 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
     } else {
       notifyObservers(Event.invalidCommand)
     }
+    FileIOJSON().save(game)
   }
 
   override def leavePlayer(): Unit = {
@@ -44,6 +48,7 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
     } else {
       notifyObservers(invalidCommand)
     }
+    FileIOJSON().save(game)
   }
 
   override def hitNextPlayer(): Unit = {

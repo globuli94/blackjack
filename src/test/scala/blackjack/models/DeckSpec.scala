@@ -14,7 +14,7 @@ class DeckSpec extends AnyWordSpec with Matchers {
 
     "be initialized as empty by default" in {
       val deck = Deck()
-      deck.deck shouldBe empty
+      deck.cards shouldBe empty
     }
 
     "contain 52 cards after shuffling" in {

@@ -5,5 +5,5 @@ import model.handComponent.HandInterface
 
 trait FileIOInterface {
   def load: GameInterface
-  def save(hand: HandInterface): Unit
+  def save(game: GameInterface): Unit
 }
