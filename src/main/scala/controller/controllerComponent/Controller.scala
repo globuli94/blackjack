@@ -1,10 +1,12 @@
 package controller.controllerComponent
 
+import com.google.inject.Inject
+
 import model.gameComponent.{GameInterface, GameState}
 import util.Event.invalidCommand
 import util.{Event, Observable, Observer}
 
-case class Controller(var game: GameInterface) extends ControllerInterface with Observable {
+case class Controller @Inject (var game: GameInterface) extends ControllerInterface with Observable {
 
   override def getGame: GameInterface = game
 
