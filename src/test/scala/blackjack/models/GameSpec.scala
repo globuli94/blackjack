@@ -9,7 +9,7 @@ import model.playerComponent.PlayerState.*
 import model.cardComponent.Card
 import model.dealerComponent.{Dealer, DealerState}
 import model.deckComponent.Deck
-import model.gameComponent.{Game, GameState}
+import model.gameComponent.{GameState, GameInterface, Game}
 import model.handComponent.Hand
 import model.playerComponent.{Player, PlayerState}
 
@@ -18,21 +18,21 @@ class GameSpec extends AnyWordSpec with Matchers {
   "A Game" should {
 
     "initialize a game" in {
-      val game = Game()
+      val game: GameInterface = Game()
 
       game.initialize shouldEqual(Game())
     }
 
     "initially have no players and a new dealer" in {
-      val game = Game()
+      val game: GameInterface = Game()
 
       game.getPlayers shouldBe empty
-      game.dealer should equal(new Dealer())
-      game.state shouldBe GameState.Initialized
+      game.getDealer should equal(new Dealer())
+      game.getState shouldBe GameState.Initialized
     }
 
     "correctly add players up to the maximum of 4" in {
-      val game = Game()
+      val game: GameInterface = Game()
       val game1 = game.createPlayer("Alice")
       val game2 = game1.createPlayer("Bob")
       val game3 = game2.createPlayer("Charlie")
@@ -47,7 +47,7 @@ class GameSpec extends AnyWordSpec with Matchers {
       val player1 = Player("Alice")
       val player2 = Player("Bob")
       val player3 = Player("Charlie")
-      val game = Game(players = List(player1, player2, player3), current_idx = 2)
+      val game: GameInterface = Game(players = List(player1, player2, player3), current_idx = 2)
 
       val updatedGame = game.leavePlayer() // Should remove Charlie
 
@@ -55,32 +55,32 @@ class GameSpec extends AnyWordSpec with Matchers {
       updatedGame.getPlayers should contain allElementsOf List(player1, player2)
       updatedGame.getIndex shouldBe 0 // Index resets
 
-      val empty_game = Game(players = List(player1)).leavePlayer()
+      val empty_game: GameInterface = Game(players = List(player1)).leavePlayer()
       empty_game.getPlayers.length shouldBe 0
     }
 
     "correctly remove a player by name" in {
       val player1 = Player("Player1", money = 100)
       val player2 = Player("Player2", money = 100)
-      val game = Game(players = List(player1, player2))
+      val game : GameInterface= Game(players = List(player1, player2))
 
-      val newGame = game.leavePlayer("Player1")
+      val newGame : GameInterface= game.leavePlayer("Player1")
 
       newGame.getPlayers should contain theSameElementsAs List(player2)
     }
 
     "deal cards to each player and the dealer" in {
-      val game = Game().createPlayer("Player1")
-      val dealtGame = game.deal
+      val game: GameInterface = Game().createPlayer("Player1")
+      val dealtGame : GameInterface= game.deal
 
       dealtGame.getState shouldBe GameState.Started
     }
 
     "dealer should hit when hand value is less than 17" in {
       val initialDealerHand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds")))// Value = 11 (Must hit)
-      val game = Game().copy(dealer = Dealer(initialDealerHand)).startGame // Next card = 7
+      val game : GameInterface= Game().copy(dealer = Dealer(initialDealerHand)).startGame // Next card = 7
 
-      val updatedGame = game.hitDealer
+      val updatedGame : GameInterface= game.hitDealer
       updatedGame.getDealer.getHand.length == 3
     }
 
@@ -90,17 +90,17 @@ class GameSpec extends AnyWordSpec with Matchers {
       val player = Player("Alice", hand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds"))))
       val player2 = Player("Alice2", hand = Hand(List(Card("5", "Hearts"), Card("6", "Diamonds"))))
 
-      val game = Game(players = List(player, player2)).deal
+      val game : GameInterface= Game(players = List(player, player2)).deal
 
-      val updatedGame = game.hitPlayer
+      val updatedGame : GameInterface= game.hitPlayer
 
       updatedGame.getPlayers.head.getHand.length == 3
       updatedGame.getPlayers(1).getHand.length == 2
     }
 
     "return input game when acting on empty game" in {
-      val game = Game()
-      val hit_game = game.hitPlayer
+      val game : GameInterface= Game()
+      val hit_game : GameInterface= game.hitPlayer
       val stand_game = game.standPlayer
 
       hit_game should equal(game)
@@ -110,9 +110,9 @@ class GameSpec extends AnyWordSpec with Matchers {
     "mark a player as busted when they exceed 21" in {
       val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("8", "Diamonds"), Card("5", "Clubs"))), state = PlayerState.Playing)
       val player2 = Player("Steve", state = PlayerState.Playing)
-      val game = Game(players = List(player, player2), deck = Deck().shuffle, state = GameState.Started)
+      val game : GameInterface= Game(players = List(player, player2), deck = Deck().shuffle, state = GameState.Started)
 
-      val updatedGame = game.hitPlayer
+      val updatedGame : GameInterface= game.hitPlayer
 
       updatedGame.getPlayers.head.getState shouldBe PlayerState.Busted
     }
@@ -120,9 +120,9 @@ class GameSpec extends AnyWordSpec with Matchers {
     "mark a player as blackjack when they have 21" in {
       val player = Player("Alice", hand = Hand(List(Card("10", "Hearts"), Card("A", "Diamonds"))))
       val player2 = Player("Steve", state = PlayerState.Playing)
-      val game = Game(players = List(player, player2), deck = Deck().shuffle, state = GameState.Started)
+      val game : GameInterface= Game(players = List(player, player2), deck = Deck().shuffle, state = GameState.Started)
 
-      val updatedGame = game.evaluate
+      val updatedGame : GameInterface= game.evaluate
 
       updatedGame.getPlayers.head.getState shouldBe PlayerState.Blackjack
     }
@@ -130,9 +130,9 @@ class GameSpec extends AnyWordSpec with Matchers {
     "allow a player to stand and leave all other players the same" in {
       val player = Player("Alice", state = Playing)
       val player2 = Player("Steve", state = Playing)
-      val game = Game(players = List(player, player2), state = GameState.Started)
+      val game : GameInterface= Game(players = List(player, player2), state = GameState.Started)
 
-      val updatedGame = game.standPlayer
+      val updatedGame : GameInterface= game.standPlayer
 
       updatedGame.getPlayers.head.getState shouldBe PlayerState.Standing
       updatedGame.getPlayers(1).getState shouldBe PlayerState.Playing
@@ -141,11 +141,11 @@ class GameSpec extends AnyWordSpec with Matchers {
     "allow a player to bet and subtract money correctly" in {
       val player = Player("Alice", money = 100, state = PlayerState.Betting)
       val player2 = Player("Steve", state = PlayerState.Betting)
-      val game = Game(players = List(), state = GameState.Betting)
-      val game_with_1 = Game(players = List(player), state = GameState.Betting)
-      val game_with_2 = Game(players = List(player, player2), state = GameState.Betting)
+      val game: GameInterface = Game(players = List(), state = GameState.Betting)
+      val game_with_1 : GameInterface= Game(players = List(player), state = GameState.Betting)
+      val game_with_2 : GameInterface= Game(players = List(player, player2), state = GameState.Betting)
 
-      val updatedGame = game.betPlayer(20)
+      val updatedGame : GameInterface= game.betPlayer(20)
       val updatedGame_with_1 = game_with_1.betPlayer(20)
       val updatedGame_with_2 = game_with_2.betPlayer(20)
 
