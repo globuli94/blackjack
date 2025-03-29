@@ -4,6 +4,13 @@ import com.google.inject.{Guice, Injector}
 
 import scala.collection.immutable.LazyList.cons
 import scala.io.StdIn.readLine
+import model.handComponent.*
+import model.cardComponent.*
+import model.fileIOComponent.*
+import model.fileIOComponent.JSON.FileIOJSON
+import model.gameComponent.GameInterface
+
+import scala.collection.immutable.Queue
 
 object Main {
   private val injector: Injector = Guice.createInjector(new BlackjackModule)
@@ -12,6 +19,9 @@ object Main {
   private val gui: GUI = GUI(controller)
 
   print(controller.toString)
+
+  val test_card: CardInterface = Card("A", "Hearts")
+  val test_hand: HandInterface = Hand(List(test_card, test_card))
 
   def main(args: Array[String]): Unit = {
 

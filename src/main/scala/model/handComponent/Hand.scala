@@ -12,6 +12,8 @@ case class Hand(hand: List[CardInterface] = List.empty, state: HandState = HandS
 
     override def getCards: Seq[CardInterface] = hand
     override def length: Int = hand.length
+    override def getState: HandState = state
+
 
     override def addCard(card: CardInterface): Hand = {
         return Hand(card :: hand)

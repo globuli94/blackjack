@@ -24,5 +24,8 @@ lazy val root = project
         // dependency injection
         "net.codingwell" %% "scala-guice" % "7.0.0",
         "com.google.inject" % "guice" % "7.0.0",
+
+        // file io
+        "com.typesafe.play" %% "play-json" % "2.10.5",
       ),
   )

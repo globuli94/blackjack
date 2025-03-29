@@ -36,7 +36,7 @@ class DeckSpec extends AnyWordSpec with Matchers {
     }
 
     "throw an exception when drawing from an empty deck" in {
-      val deck = Deck(Queue.empty)
+      val deck = Deck(List.empty)
       an[NoSuchElementException] should be thrownBy deck.draw
     }
   }
