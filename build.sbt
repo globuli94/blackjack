@@ -19,6 +19,7 @@ lazy val root = project
         "org.scalameta" %% "munit" % "1.0.0" % Test,
         "org.scalatest" %% "scalatest" % "3.2.18" % Test,
         "org.scalactic" %% "scalactic" % "3.2.18",
+        "org.mockito" % "mockito-core" % "5.14.2",
 
         // dependency injection
         "net.codingwell" %% "scala-guice" % "7.0.0",
