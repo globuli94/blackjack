@@ -1,5 +1,7 @@
 package model.gameComponent
 
+import com.google.inject.Inject
+
 import model.cardComponent.CardInterface
 import model.dealerComponent.*
 import model.deckComponent.*
@@ -11,7 +13,7 @@ enum GameState {
   case Initialized, Betting, Started, Evaluated
 }
 
-case class Game(
+case class Game @Inject() (
                  current_idx: Int = 0,
                  players: List[PlayerInterface] = List.empty,
                  deck: DeckInterface = Deck(),

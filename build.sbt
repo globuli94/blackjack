@@ -12,9 +12,16 @@ lazy val root = project
       scalaVersion := scala3Version,
 
       libraryDependencies ++= Seq(
-          "org.scala-lang.modules" %% "scala-swing" % "3.0.0",
-          "org.scalameta" %% "munit" % "1.0.0" % Test,
-          "org.scalatest" %% "scalatest" % "3.2.18" % Test,
-          "org.scalactic" %% "scalactic" % "3.2.18"
+        // gui
+        "org.scala-lang.modules" %% "scala-swing" % "3.0.0",
+
+        // scala test
+        "org.scalameta" %% "munit" % "1.0.0" % Test,
+        "org.scalatest" %% "scalatest" % "3.2.18" % Test,
+        "org.scalactic" %% "scalactic" % "3.2.18",
+
+        // dependency injection
+        "net.codingwell" %% "scala-guice" % "7.0.0",
+        "com.google.inject" % "guice" % "7.0.0",
       ),
   )

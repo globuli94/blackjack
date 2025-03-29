@@ -1,18 +1,17 @@
-import controller.controllerComponent.*
-import model.gameComponent.*
+import controller.controllerComponent.ControllerInterface
 import view.{GUI, TUI}
+import com.google.inject.{Guice, Injector}
 
 import scala.collection.immutable.LazyList.cons
 import scala.io.StdIn.readLine
 
 object Main {
-
-  private val game: GameInterface = Game()
-  private val controller: ControllerInterface = Controller(game)
+  private val injector: Injector = Guice.createInjector(new BlackjackModule)
+  private val controller: ControllerInterface = injector.getInstance(classOf[ControllerInterface])
   private val tui: TUI = TUI(controller)
   private val gui: GUI = GUI(controller)
 
-  println(game.toString)
+  print(controller.toString)
 
   def main(args: Array[String]): Unit = {
 
