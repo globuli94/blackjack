@@ -1,7 +1,7 @@
 package blackjack.controllers
 
 import controller.controllerComponent.{Controller, ControllerInterface}
-import model.cardComponent.Card
+import model.cardComponent.{Card, CardInterface}
 import model.deckComponent.{Deck, DeckInterface}
 import model.gameComponent.{Game, GameInterface, GameState}
 import model.handComponent.{Hand, HandInterface}
@@ -199,14 +199,14 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "bet if allowed by game state" in {
-      val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test")
-      val player_with_hand = Player(name = player.getName, bet = 0, money = 200, state = PlayerState.Betting)
+      val card: CardInterface = Card("2", "Hearts")
+      val deck: DeckInterface = Deck(List(card, card, card, card, card))
+      val player: PlayerInterface = Player(name = "steve", bet = 0, money = 200, state = PlayerState.Betting)
 
       val game1: GameInterface =
         Game(
           state = GameState.Betting,
-          players = List(player_with_hand, player),
+          players = List(player),
           deck = deck)
 
       val controller = Controller(game1, fileIO)
