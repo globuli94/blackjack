@@ -1,24 +1,37 @@
 package controller.controllerComponent
 
 import com.google.inject.Inject
-
 import model.gameComponent.{GameInterface, GameState}
-import util.Event.invalidCommand
+import util.Event.*
+import util.fileIOComponent.FileIOInterface
 import util.{Event, Observable, Observer}
+import util.fileIOComponent.JSON.FileIOJSON
 
-case class Controller @Inject (var game: GameInterface) extends ControllerInterface with Observable {
+case class Controller @Inject (var game: GameInterface, fileIO: FileIOInterface) extends ControllerInterface with Observable {
 
   override def getGame: GameInterface = game
 
+  override def saveGame(): Unit = {
+    fileIO.save(game)
+    notifyObservers(Event.save)
+  }
+
+  override def loadGame(): Unit = {
+    game = fileIO.load()
+    notifyObservers(Event.load)
+  }
+
   override def initializeGame(): Unit = {
     game = game.initialize
-    notifyObservers(Event.Start)
+    notifyObservers(Event.start)
+    saveGame()
   }
 
   override def startGame(): Unit = {
     if ((game.getState == GameState.Initialized || game.getState == GameState.Evaluated) && game.getPlayers.nonEmpty) {
       game = game.startGame
-      notifyObservers(Event.Start)
+      notifyObservers(Event.start)
+      saveGame()
     } else {
       notifyObservers(Event.invalidCommand)
     }
@@ -30,17 +43,20 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
         notifyObservers(Event.errPlayerNameExists)
       } else {
         game = game.createPlayer(name)
-        notifyObservers(Event.AddPlayer)
+        notifyObservers(Event.addPlayer)
+        saveGame()
       }
     } else {
       notifyObservers(Event.invalidCommand)
     }
+
   }
 
   override def leavePlayer(): Unit = {
     if(game.getPlayers.nonEmpty) {
         game = game.leavePlayer()
         notifyObservers(Event.leavePlayer)
+        saveGame()
     } else {
       notifyObservers(invalidCommand)
     }
@@ -51,18 +67,22 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
     if (player.getHand.canHit && game.getState == GameState.Started) {
       game = game.hitPlayer
       notifyObservers(Event.hitNextPlayer)
+      saveGame()
     } else {
       notifyObservers(Event.invalidCommand)
     }
+
   }
 
   override def standNextPlayer(): Unit = {
     if (game.getState == GameState.Started) {
       game = game.standPlayer
       notifyObservers(Event.standNextPlayer)
+      saveGame()
     } else {
       notifyObservers(Event.invalidCommand)
     }
+
   }
 
   override def doubleDown(): Unit = {
@@ -71,6 +91,7 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
     if (game.getState == GameState.Started && player.getHand.canDoubleDown && player.getBet <= player.getMoney) {
       game = game.doubleDownPlayer
       notifyObservers(Event.doubleDown)
+      saveGame()
     } else {
       notifyObservers(Event.invalidBet)
     }
@@ -82,6 +103,7 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
         if (game.isValidBet(amount.toInt) && amount.toInt > 0) {
           game = game.betPlayer(amount.toInt)
           notifyObservers(Event.bet)
+          saveGame()
         } else {
           notifyObservers(Event.invalidBet)
         }
@@ -94,6 +116,7 @@ case class Controller @Inject (var game: GameInterface) extends ControllerInterf
   }
 
   override def exit(): Unit = {
+    saveGame()
     sys.exit(0)
   }
 

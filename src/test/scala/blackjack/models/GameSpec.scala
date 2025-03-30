@@ -230,7 +230,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       "eval correctly if player and dealer have blackjack" in {
         val player = Player("Alice", state = Blackjack)
-        val dealer = Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("K", "Hearts"))))
+        val dealer = Dealer(hand = Hand(cards = List(Card("A", "Hearts"), Card("K", "Hearts"))))
 
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
@@ -240,7 +240,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       "eval correctly if player has blackjack" in {
         val player = Player("Alice", state = Blackjack)
-        val dealer = Dealer(hand = Hand(hand = List(Card("7", "Hearts"), Card("10", "Hearts"))))
+        val dealer = Dealer(hand = Hand(cards = List(Card("7", "Hearts"), Card("10", "Hearts"))))
 
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
@@ -259,7 +259,7 @@ class GameSpec extends AnyWordSpec with Matchers {
       "eval correctly if player has lost standing" in {
         val player = Player("Alice", state = Standing, hand = Hand(List(Card("2", "Hearts"), Card("2", "Hearts"))))
         val dealer =
-          Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
+          Dealer(hand = Hand(cards = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
 
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
@@ -271,7 +271,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         val player =
           Player("Alice", state = Standing, hand = Hand(List(Card("10", "Hearts"), Card("10", "Hearts"))))
         val dealer =
-          Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
+          Dealer(hand = Hand(cards = List(Card("A", "Hearts"), Card("7", "Hearts"))), state = DealerState.Standing)
 
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
@@ -281,7 +281,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       "eval correctly if player has won double down" in {
         val player = Player("Alice", state = DoubledDown, hand = Hand(List(Card("10", "Hearts"), Card("10", "Hearts"))))
-        val dealer = Dealer(hand = Hand(hand = List(Card("A", "Hearts"), Card("7", "Hearts"))))
+        val dealer = Dealer(hand = Hand(cards = List(Card("A", "Hearts"), Card("7", "Hearts"))))
 
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
@@ -346,7 +346,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         }
 
         "have to option to hit when hand allows hit" in {
-          val hand = Hand(hand = List(Card("10", "Hearts"), Card("10", "Hearts")))
+          val hand = Hand(cards = List(Card("10", "Hearts"), Card("10", "Hearts")))
           val game = Game(players = List(Player("Steve",  hand = hand)), state = Started)
           val options = game.getPlayerOptions
 
@@ -354,7 +354,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         }
 
         "have no option to hit when hand doesnt allow hit" in {
-          val hand = Hand(hand = List(Card("10", "Hearts"), Card("10", "Hearts"), Card("10", "Hearts")))
+          val hand = Hand(cards = List(Card("10", "Hearts"), Card("10", "Hearts"), Card("10", "Hearts")))
           val game = Game(players = List(Player("Steve", hand = hand)), state = Started)
           val options = game.getPlayerOptions
 
@@ -362,7 +362,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         }
 
         "have to option to double down when hand allows hit" in {
-          val hand = Hand(hand = List(Card("5", "Hearts"), Card("5", "Hearts")))
+          val hand = Hand(cards = List(Card("5", "Hearts"), Card("5", "Hearts")))
           val game = Game(players = List(Player("Steve",  hand = hand)), state = Started)
           val options = game.getPlayerOptions
 

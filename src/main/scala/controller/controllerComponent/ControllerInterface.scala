@@ -4,6 +4,8 @@ import model.gameComponent.GameInterface
 import util.Observable
 
 trait ControllerInterface extends Observable {
+  def loadGame(): Unit
+  def saveGame(): Unit
   def getGame: GameInterface
   def initializeGame(): Unit
   def startGame(): Unit

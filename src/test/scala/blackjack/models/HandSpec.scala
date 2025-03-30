@@ -13,7 +13,7 @@ class HandSpec extends AnyWordSpec with Matchers {
     "correctly add a card" in {
       val hand = Hand()
       val card = Card("2", "Hearts")
-      hand.addCard(card).hand should contain theSameElementsAs List(card)
+      hand.addCard(card).cards should contain theSameElementsAs List(card)
     }
 
     "calculate the correct value for different hands" in {

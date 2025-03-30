@@ -29,6 +29,8 @@ class TUI(controller:ControllerInterface) extends Observer {
         controller.bet(splitInput(1))
       case "leave" =>
         controller.leavePlayer()
+      case "undo" =>
+        controller.loadGame()
       case "exit" =>
         controller.exit()
       case _
@@ -41,8 +43,8 @@ class TUI(controller:ControllerInterface) extends Observer {
 
   override def update(e: Event): Unit =
     e match {
-      case Event.AddPlayer => println(controller.toString)
-      case Event.Start => println(controller.toString)
+      case Event.addPlayer => println(controller.toString)
+      case Event.start => println(controller.toString)
       case Event.hitNextPlayer => println(controller.toString)
       case Event.standNextPlayer => println(controller.toString)
       case Event.bet => println(controller.toString) 
@@ -51,8 +53,9 @@ class TUI(controller:ControllerInterface) extends Observer {
       case Event.leavePlayer => println(controller.toString)
       case Event.invalidCommand => println("Error: Invalid Command")
       case Event.invalidBet => println("Error: Insufficent Funds")
-      case Event.Create =>
+      case Event.create =>
       case Event.errPlayerNameExists => println("Error: Player name already exists")
-      case _ => ???
+      case Event.load => println(controller.toString)
+      case _ =>
     }
 }
