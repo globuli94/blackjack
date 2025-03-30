@@ -5,7 +5,6 @@ import model.handComponent.HandInterface
 trait PlayerInterface {
   def getName: String
   def getHand: HandInterface
-  def getSplitHand: List[HandInterface]
   def getMoney: Int
   def getBet: Int
   def getState: PlayerState

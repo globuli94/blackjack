@@ -4,7 +4,6 @@ import model.cardComponent.CardInterface
 
 trait HandInterface {
   def getCards: Seq[CardInterface]
-  def getState: HandState
   def length: Int
   def getHandValue: Int
   def addCard(card: CardInterface): Hand

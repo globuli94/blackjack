@@ -1,30 +1,22 @@
-package model.fileIOComponent.JSON
+package util.fileIOComponent.JSON
 
-import scala.collection.immutable.Queue
 import model.cardComponent.{Card, CardInterface}
 import model.dealerComponent.*
 import model.deckComponent.*
-import model.fileIOComponent.FileIOInterface
 import model.gameComponent.GameState.{Evaluated, Initialized, Started}
 import model.gameComponent.{Game, GameInterface, GameState}
-import model.handComponent.HandState.{Play, Stand}
-import model.handComponent.{Hand, HandInterface, HandState}
+import model.handComponent.{Hand, HandInterface}
 import model.playerComponent.*
 import model.playerComponent.PlayerState.{Betting, Blackjack, Busted, DoubledDown, Idle, LOST, Playing, Split, Standing, WON}
 import play.api.libs.json.{JsError, JsPath, JsString, JsSuccess, JsValue, Json, Reads, Writes}
 import play.api.libs.functional.syntax.*
+import util.fileIOComponent.FileIOInterface
 
 import java.io.PrintWriter
+import scala.io.Source
 
 
 class FileIOJSON extends FileIOInterface {
-
-  // HAND STATE
-  implicit val handStateReads: Reads[HandState] = Reads[HandState] {
-    case JsString("Play") => JsSuccess(Play)
-    case JsString("Stand") => JsSuccess(Stand)
-    case _ => JsError("Invalid HandState")
-  }
 
   // PLAYER STATE
   implicit val playerStateReads: Reads[PlayerState] = Reads[PlayerState] {
@@ -72,19 +64,16 @@ class FileIOJSON extends FileIOInterface {
 
   // HAND
   implicit val handWrites: Writes[HandInterface] = (hand: HandInterface) => Json.obj(
-    "hand" -> hand.getCards,           // Serializes the list of cards
-    "state" -> hand.getState.toString  // Serializes the HandState as a string
+    "cards" -> hand.getCards,           // Serializes the list of cards
   )
-  implicit val handReads: Reads[HandInterface] = (
-    (JsPath \ "hand").read[List[CardInterface]] and // Reads the list of cards
-      (JsPath \ "state").read[HandState]             // Reads the HandState (Play, Stand, etc.)
-    ) ((cards, state) => Hand(cards, state))          // Create a Hand object from the parsed values
+  implicit val handReads: Reads[HandInterface] = (json: JsValue) => {
+    (json \ "cards").validate[List[CardInterface]].map(cards => Hand(cards))
+  }        // Create a Hand object from the parsed values
 
   // PLAYER
   implicit val playerWrites: Writes[PlayerInterface] = (player: PlayerInterface) => Json.obj(
     "name" -> player.getName,
     "hand" -> player.getHand,
-    "split_hand" -> player.getSplitHand,
     "money" -> player.getMoney,
     "bet" -> player.getBet,
     "state" -> player.getState.toString
@@ -97,7 +86,7 @@ class FileIOJSON extends FileIOInterface {
       (JsPath \ "bet").read[Int] and
       (JsPath \ "state").read[PlayerState]
     // Reads the HandState (Play, Stand, etc.)
-    ) ((name, hand, split_hand, money, bet, state) => Player(name, hand, split_hand, money, bet, state))
+    ) ((name, hand, split_hand, money, bet, state) => Player(name, hand, money, bet, state))
 
   // DEALER
   implicit val dealerWrites: Writes[DealerInterface] = (dealer: DealerInterface) => Json.obj(
@@ -128,6 +117,7 @@ class FileIOJSON extends FileIOInterface {
     "dealer" -> game.getDealer,
     "state" -> game.getState.toString
   )
+
   implicit val gameReads: Reads[GameInterface] = (
     (JsPath \ "current_idx").read[Int] and // Reads the list of cards
       (JsPath \ "players").read[List[PlayerInterface]] and
@@ -137,12 +127,29 @@ class FileIOJSON extends FileIOInterface {
     // Reads the HandState (Play, Stand, etc.)
     )((idx, players, deck, dealer, state) => Game(idx, players, deck, dealer, state))
 
-  override def load: GameInterface = Game()
+  override def load: GameInterface = {
+    val source = Source.fromFile("game.json") // open source
+
+    try {
+      // get json
+      val json = Json.parse(source.getLines.mkString)
+
+      // try convert to game using validate
+      json.validate[GameInterface] match {
+        case JsSuccess(game, _) => game
+        case JsError(errors) =>
+          throw new Exception("Error parsing JSON: " + errors.toString)
+      }
+    } finally {
+      source.close() // close source
+    }
+  }
 
   override def save(game: GameInterface): Unit = {
     val jsonString = Json.stringify(Json.toJson(game))
     new PrintWriter("game.json") {
-      write(jsonString); close()
+      write(jsonString);
+      close()
     }
   }
 }

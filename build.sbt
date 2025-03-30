@@ -26,6 +26,7 @@ lazy val root = project
         "com.google.inject" % "guice" % "7.0.0",
 
         // file io
+        "org.scala-lang.modules" %% "scala-xml" % "2.3.0",
         "com.typesafe.play" %% "play-json" % "2.10.5",
       ),
   )

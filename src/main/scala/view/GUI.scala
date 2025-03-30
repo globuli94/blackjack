@@ -5,7 +5,7 @@ import util.{Event, Observer}
 import model.gameComponent.*
 import model.gameComponent.GameState.Initialized
 import model.playerComponent.*
-import util.Event.{AddPlayer, End, Split}
+import util.Event.*
 
 import scala.swing.*
 import scala.swing.MenuBar.NoMenuBar.revalidate
@@ -27,6 +27,12 @@ class GUI(controller: ControllerInterface) extends Frame with Observer {
   visible = true
   centerOnScreen()
   controller.add(this)
+
+  menuBar = new MenuBar {
+    contents += new Menu("Game") {
+      contents += new MenuItem(Action("Load") { controller.loadGame() })
+    }
+  }
 
   peer.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
   // Listen to the WindowClosing event (triggered by the close button)

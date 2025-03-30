@@ -6,9 +6,8 @@ import scala.collection.immutable.LazyList.cons
 import scala.io.StdIn.readLine
 import model.handComponent.*
 import model.cardComponent.*
-import model.fileIOComponent.*
-import model.fileIOComponent.JSON.FileIOJSON
 import model.gameComponent.GameInterface
+import util.fileIOComponent.JSON.FileIOJSON
 
 import scala.collection.immutable.Queue
 

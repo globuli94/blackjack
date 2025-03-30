@@ -10,14 +10,27 @@ import model.playerComponent.{Player, PlayerInterface, PlayerState}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers.should
+import util.fileIOComponent.FileIOInterface
+import util.fileIOComponent.JSON.FileIOJSON
 
 class ControllerSpec extends AnyWordSpec with Matchers {
 
   "A Controller" should {
+    val fileIO: FileIOInterface =  FileIOJSON()
+
+    "load the last saved game on load" in {
+      val game: GameInterface = Game()
+      val controller: ControllerInterface = Controller(game, fileIO)
+
+      controller.saveGame()
+      controller.loadGame()
+
+      controller.getGame should equal(game)
+    }
 
     "initialize a game" in {
       val game: GameInterface = Game()
-      val controller: ControllerInterface = Controller(game)
+      val controller: ControllerInterface = Controller(game, fileIO)
 
       controller.initializeGame()
 
@@ -28,7 +41,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
 
     "start not start a game without players" in {
       val game: GameInterface = Game()
-      val controller: ControllerInterface = Controller(game)
+      val controller: ControllerInterface = Controller(game, fileIO)
 
       controller.initializeGame()
       controller.startGame()
@@ -41,8 +54,8 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val player2: PlayerInterface = Player("Mark")
       val game1: GameInterface = Game(players = List(player, player2), state = GameState.Initialized)
       val game2: GameInterface = Game(players = List(player, player2), state = GameState.Evaluated)
-      val controller1: ControllerInterface = Controller(game1)
-      val controller2: ControllerInterface = Controller(game2)
+      val controller1: ControllerInterface = Controller(game1, fileIO)
+      val controller2: ControllerInterface = Controller(game2, fileIO)
 
       controller1.startGame()
       controller2.startGame()
@@ -56,9 +69,9 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val game2: GameInterface = Game(state = GameState.Evaluated)
       val game3: GameInterface = Game(state = GameState.Betting)
 
-      val controller1: ControllerInterface = Controller(game1)
-      val controller2: ControllerInterface = Controller(game2)
-      val controller3: ControllerInterface = Controller(game3)
+      val controller1: ControllerInterface = Controller(game1, fileIO)
+      val controller2: ControllerInterface = Controller(game2, fileIO)
+      val controller3: ControllerInterface = Controller(game3, fileIO)
 
       controller1.addPlayer("Steve")
       controller2.addPlayer("Steve")
@@ -72,7 +85,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
 
     "leave a player when game not empty" in {
       val game1: GameInterface = Game(state = GameState.Initialized)
-      val controller1: ControllerInterface = Controller(game1)
+      val controller1: ControllerInterface = Controller(game1, fileIO)
 
       controller1.addPlayer("Steve")
       controller1.leavePlayer()
@@ -82,7 +95,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
 
     "not leave a player when game empty" in {
       val game1: GameInterface = Game(state = GameState.Initialized)
-      val controller1: ControllerInterface = Controller(game1)
+      val controller1: ControllerInterface = Controller(game1, fileIO)
 
       controller1.leavePlayer()
 
@@ -101,7 +114,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           players = List(player_with_hand, player),
           deck = deck)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
 
       controller.hitNextPlayer()
 
@@ -120,7 +133,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           players = List(player_with_hand, player),
           deck = deck)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
       controller.hitNextPlayer()
 
       controller.getGame.getState should be (GameState.Initialized)
@@ -133,7 +146,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           state = GameState.Started,
           players = List(Player("StandingPlayer"), Player("notStanding", state = PlayerState.Playing)),
           deck = deck)
-      val controller: ControllerInterface = Controller(game1)
+      val controller: ControllerInterface = Controller(game1, fileIO)
 
       controller.standNextPlayer()
       controller.getGame.getPlayers.head.getState should be (PlayerState.Standing)
@@ -143,7 +156,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val game1: GameInterface =
         Game(state = GameState.Initialized)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
       controller.standNextPlayer()
 
       controller.getGame.getState should be(GameState.Initialized)
@@ -161,7 +174,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           players = List(player_with_hand, player),
           deck = deck)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
       controller.doubleDown()
 
       controller.game.getPlayers.head.getHand.length should be(3)
@@ -179,7 +192,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           players = List(player_with_hand, player),
           deck = deck)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
       controller.doubleDown()
 
       controller.game.getPlayers.head.getHand.length should be(2)
@@ -196,7 +209,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           players = List(player_with_hand, player),
           deck = deck)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
       controller.bet("100")
 
       controller.getGame.getPlayers.head.getState should be (PlayerState.Playing)
@@ -213,7 +226,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           players = List(player_with_hand, player),
           deck = deck)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
       controller.bet("1000")
 
       controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
@@ -234,7 +247,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
           players = List(player_with_hand, player),
           deck = deck)
 
-      val controller = Controller(game1)
+      val controller = Controller(game1, fileIO)
       controller.bet("100")
 
       controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
@@ -242,7 +255,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
 
     "create a string on tostring" in {
       val game : GameInterface = Game()
-      val controller : ControllerInterface = Controller(game)
+      val controller : ControllerInterface = Controller(game, fileIO)
 
       controller.toString should be (a[String])
     }

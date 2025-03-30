@@ -12,18 +12,20 @@ trait Observable {
 }
 
 enum Event {
-  case Create
-  case Start
-  case AddPlayer
+  case create
+  case start
+  case addPlayer
   case hitNextPlayer
   case standNextPlayer
   case doubleDown
-  case Split
+  case split
   case bet
   case continue
   case leavePlayer
   case invalidCommand
   case invalidBet
-  case End
+  case end
   case errPlayerNameExists
+  case save
+  case load
 }

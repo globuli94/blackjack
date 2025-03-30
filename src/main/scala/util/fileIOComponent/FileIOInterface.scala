@@ -1,4 +1,4 @@
-package model.fileIOComponent
+package util.fileIOComponent
 
 import model.gameComponent.GameInterface
 import model.handComponent.HandInterface

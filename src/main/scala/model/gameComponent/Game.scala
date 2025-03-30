@@ -1,7 +1,6 @@
 package model.gameComponent
 
 import com.google.inject.Inject
-
 import model.cardComponent.CardInterface
 import model.dealerComponent.*
 import model.deckComponent.*
@@ -18,7 +17,8 @@ case class Game @Inject() (
                  players: List[PlayerInterface] = List.empty,
                  deck: DeckInterface = Deck(),
                  dealer: DealerInterface = Dealer(),
-                 state: GameState = GameState.Initialized) extends GameInterface {
+                 state: GameState = GameState.Initialized
+                          ) extends GameInterface {
 
   override def getIndex: Int = current_idx
   override def getPlayers: List[PlayerInterface] = players
@@ -66,7 +66,7 @@ case class Game @Inject() (
 
         // Update player's state to playing
         val updatedPlayer =
-          Player(player.getName, updatedHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Playing)
+          Player(player.getName, updatedHand, player.getMoney, player.getBet, PlayerState.Playing)
 
         // Accumulate the updated player and deck for the next iteration
         (playersAcc :+ updatedPlayer, finalDeck)
@@ -92,7 +92,7 @@ case class Game @Inject() (
       val updated_players: List[PlayerInterface] = players.map({
         p => {
           if(p == player)
-            Player(p.getName, new_player_hand, p.getSplitHand, p.getMoney, p.getBet, p.getState)
+            Player(p.getName, new_player_hand, p.getMoney, p.getBet, p.getState)
           else p
         }
       })
@@ -112,7 +112,7 @@ case class Game @Inject() (
         val updated_players: List[PlayerInterface] = players.map({
           p => {
             if(p == player)
-              Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, p.getBet, PlayerState.Standing)
+              Player(p.getName, p.getHand, p.getMoney, p.getBet, PlayerState.Standing)
             else p
           }
         })
@@ -133,7 +133,7 @@ case class Game @Inject() (
         val updated_players: List[PlayerInterface] = players.map({
           p => {
             if (p == player)
-              Player(p.getName, p.getHand, p.getSplitHand, new_balance, amount, PlayerState.Playing)
+              Player(p.getName, p.getHand, new_balance, amount, PlayerState.Playing)
             else p
           }
         })
@@ -166,7 +166,7 @@ case class Game @Inject() (
         val updated_players: List[PlayerInterface] = players.map({
           p => {
             if (p == player)
-              Player(p.getName, new_player_hand, p.getSplitHand, new_balance, new_bet, PlayerState.DoubledDown)
+              Player(p.getName, new_player_hand, new_balance, new_bet, PlayerState.DoubledDown)
             else p
           }
         })
@@ -182,7 +182,7 @@ case class Game @Inject() (
   override def startGame: GameInterface = {
     val updated_players = players.map(
       p =>
-        Player(p.getName, Hand(), p.getSplitHand, p.getMoney, p.getBet, PlayerState.Betting)
+        Player(p.getName, Hand(), p.getMoney, p.getBet, PlayerState.Betting)
     )
 
     copy(
@@ -198,9 +198,9 @@ case class Game @Inject() (
     val evaluated_players: List[PlayerInterface] = players.map {
       case player if player.getState == PlayerState.Standing => player
       case player if player.getHand.isBust =>
-        Player(player.getName, player.getHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Busted)
+        Player(player.getName, player.getHand, player.getMoney, player.getBet, PlayerState.Busted)
       case player if player.getHand.hasBlackjack =>
-        Player(player.getName, player.getHand, player.getSplitHand, player.getMoney, player.getBet, PlayerState.Blackjack)
+        Player(player.getName, player.getHand, player.getMoney, player.getBet, PlayerState.Blackjack)
       case player => player
     }
 
@@ -238,18 +238,18 @@ case class Game @Inject() (
           val evaluated_players_bets = evaluated_players.map { p =>
             p.getState match {
               case PlayerState.Blackjack if dealer.getHand.hasBlackjack =>
-                Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, 0, LOST)
+                Player(p.getName, p.getHand, p.getMoney, 0, LOST)
               case PlayerState.Blackjack =>
                 val money_after_winning = p.getMoney + p.getBet * 2
-                Player(p.getName, p.getHand, p.getSplitHand, money_after_winning, 0, WON)
+                Player(p.getName, p.getHand, money_after_winning, 0, WON)
               case PlayerState.Standing | PlayerState.DoubledDown
                 if dealer.getHand.getHandValue >= p.getHand.getHandValue && !dealer.getHand.isBust =>
-                  Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, 0, LOST)
+                  Player(p.getName, p.getHand, p.getMoney, 0, LOST)
               case PlayerState.Standing | PlayerState.DoubledDown =>
                 val money_after_winning = p.getMoney + p.getBet * 2
-                Player(p.getName, p.getHand, p.getSplitHand, money_after_winning, 0, WON)
+                Player(p.getName, p.getHand, money_after_winning, 0, WON)
               case PlayerState.Busted =>
-                Player(p.getName, p.getHand, p.getSplitHand, p.getMoney, 0, LOST)
+                Player(p.getName, p.getHand, p.getMoney, 0, LOST)
               case _ => p
             }
           }
@@ -272,12 +272,12 @@ case class Game @Inject() (
         baseOptions ++ (if (players.nonEmpty) List("add <player>", "start") else List("add <player>"))
 
       case GameState.Betting =>
-        baseOptions ++ List("bet <amount>", "leave")
+        baseOptions ++ List("bet <amount>", "leave", "undo")
 
       case GameState.Started =>
         playerOpt match {
           case Some(player) =>
-            baseOptions ++ List("stand") ++
+            baseOptions ++ List("stand", "undo") ++
               (if (player.getHand.canHit) List("hit") else Nil) ++
               (if (player.getHand.canDoubleDown && player.getMoney >= player.getBet) List("double (down)") else Nil)
           // ++ (if (player.hand.canSplit) List("split") else Nil)  // Uncomment if needed
