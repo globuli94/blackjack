@@ -148,10 +148,10 @@ class FileIOXML extends FileIOInterface {
     gameFromXML(source)
   }
 
-  override def save(game: GameInterface): Unit = {
+  override def save(game: GameInterface, path: String = "game.xml"): Unit = {
     val xml = gameToXML(game)
     val prettyPrinter = new PrettyPrinter(120, 4)
     val prettyXml = prettyPrinter.format(xml)
-    XML.save("game.xml", XML.loadString(prettyXml), "UTF-8", xmlDecl = true, null)
+    XML.save(path, XML.loadString(prettyXml), "UTF-8", xmlDecl = true, null)
   }
 }

@@ -144,9 +144,9 @@ class FileIOJSON extends FileIOInterface {
     }
   }
 
-  override def save(game: GameInterface): Unit = {
+  override def save(game: GameInterface, path: String = "game.json"): Unit = {
     val jsonString = Json.stringify(Json.toJson(game))
-    new PrintWriter("game.json") {
+    new PrintWriter(path) {
       write(jsonString);
       close()
     }

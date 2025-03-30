@@ -52,8 +52,8 @@ class FileIOXMLSpec extends FileIOTestBase {
     "convert a game into xml" in {
       val game: GameInterface = fileIO.load("game_test.xml")
 
-      fileIO.save(game)
-      val game_loaded: GameInterface = fileIO.load("game.xml")
+      fileIO.save(game, "game_test.xml")
+      val game_loaded: GameInterface = fileIO.load("game_test.xml")
 
       game_loaded.getState should be (game.getState)
     }
