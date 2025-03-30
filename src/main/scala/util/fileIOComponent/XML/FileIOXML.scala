@@ -15,7 +15,7 @@ import scala.xml.{Elem, Node, NodeSeq, PrettyPrinter, XML}
 class FileIOXML extends FileIOInterface {
 
   // PLAYER STATE
-  private def playerStateFromString(state: String): PlayerState = state match {
+  def playerStateFromString(state: String): PlayerState = state match {
     case "Playing" => Playing
     case "Standing" => Standing
     case "DoubledDown" => DoubledDown
@@ -30,7 +30,7 @@ class FileIOXML extends FileIOInterface {
   }
 
   // DEALER STATE
-  private def dealerStateFromString(state: String): DealerState = state match {
+  def dealerStateFromString(state: String): DealerState = state match {
     case "Idle" => DealerState.Idle
     case "Dealing" => DealerState.Dealing
     case "Bust" => DealerState.Bust
@@ -39,7 +39,7 @@ class FileIOXML extends FileIOInterface {
   }
 
   // GAME STATE
-  private def gameStateFromString(state: String): GameState = state match {
+  def gameStateFromString(state: String): GameState = state match {
     case "Initialized" => Initialized
     case "Betting" => GameState.Betting
     case "Started" => Started
@@ -88,7 +88,6 @@ class FileIOXML extends FileIOInterface {
   private def playerFromXML(node: Node): PlayerInterface = {
     val name = (node \ "name").text
     val hand = handFromXML((node \ "hand").head)
-    val splitHands = (node \ "split_hands" \ "hand").map(handFromXML).toList
     val money = (node \ "money").text.toInt
     val bet = (node \ "bet").text.toInt
     val state = playerStateFromString((node \ "state").text)
@@ -144,8 +143,8 @@ class FileIOXML extends FileIOInterface {
     Game(idx, players, deck, dealer, state)
   }
 
-  override def load: GameInterface = {
-    val source = XML.loadFile("game.xml")
+  override def load(path: String = "game.xml"): GameInterface = {
+    val source = XML.loadFile(path)
     gameFromXML(source)
   }
 

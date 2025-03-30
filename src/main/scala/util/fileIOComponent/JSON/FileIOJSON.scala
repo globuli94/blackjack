@@ -81,12 +81,11 @@ class FileIOJSON extends FileIOInterface {
   implicit val playerReads: Reads[PlayerInterface] = (
     (JsPath \ "name").read[String] and // Reads the list of cards
       (JsPath \ "hand").read[HandInterface] and
-      (JsPath \ "split_hand").read[List[HandInterface]] and
       (JsPath \ "money").read[Int] and
       (JsPath \ "bet").read[Int] and
       (JsPath \ "state").read[PlayerState]
     // Reads the HandState (Play, Stand, etc.)
-    ) ((name, hand, split_hand, money, bet, state) => Player(name, hand, money, bet, state))
+    ) ((name, hand, money, bet, state) => Player(name, hand, money, bet, state))
 
   // DEALER
   implicit val dealerWrites: Writes[DealerInterface] = (dealer: DealerInterface) => Json.obj(
@@ -127,8 +126,8 @@ class FileIOJSON extends FileIOInterface {
     // Reads the HandState (Play, Stand, etc.)
     )((idx, players, deck, dealer, state) => Game(idx, players, deck, dealer, state))
 
-  override def load: GameInterface = {
-    val source = Source.fromFile("game.json") // open source
+  override def load(path: String = "game.json"): GameInterface = {
+    val source = Source.fromFile(path) // open source
 
     try {
       // get json

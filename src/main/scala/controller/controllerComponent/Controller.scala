@@ -17,7 +17,7 @@ case class Controller @Inject (var game: GameInterface, fileIO: FileIOInterface)
   }
 
   override def loadGame(): Unit = {
-    game = fileIO.load
+    game = fileIO.load()
     notifyObservers(Event.load)
   }
 

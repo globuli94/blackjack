@@ -13,14 +13,9 @@ class BlackjackModule extends AbstractModule with ScalaModule {
     bind[ControllerInterface].to[Controller]
 
     val useJson = System.getProperty("fileio.json", "false").toBoolean
-    bind[FileIOInterface].to[FileIOXML]
-
-    /*
     if (useJson) {
       bind[FileIOInterface].to[FileIOJSON]
     } else {
       bind[FileIOInterface].to[FileIOXML]
     }
-    */
-
 }
