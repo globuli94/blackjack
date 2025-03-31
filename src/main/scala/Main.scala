@@ -19,9 +19,6 @@ object Main {
 
   print(controller.toString)
 
-  val test_card: CardInterface = Card("A", "Hearts")
-  val test_hand: HandInterface = Hand(List(test_card, test_card))
-
   def main(args: Array[String]): Unit = {
 
     var input: String = ""

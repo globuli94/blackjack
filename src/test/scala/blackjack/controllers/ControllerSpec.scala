@@ -200,7 +200,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
 
     "bet if allowed by game state" in {
       val card: CardInterface = Card("2", "Hearts")
-      val deck: DeckInterface = Deck(List(card, card, card, card, card))
+      val deck: DeckInterface = Deck(List(card, card))
       val player: PlayerInterface = Player(name = "steve", bet = 0, money = 200, state = PlayerState.Betting)
 
       val game1: GameInterface =
@@ -212,7 +212,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val controller = Controller(game1, fileIO)
       controller.bet("100")
 
-      controller.getGame.getPlayers.head.getState should be (PlayerState.Playing)
+      controller.getGame.getPlayers.head.getBet should be (100)
     }
 
     "not bet if bet is invalid" in {
@@ -250,7 +250,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val controller = Controller(game1, fileIO)
       controller.bet("100")
 
-      controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
+      controller.getGame.getPlayers.head.getBet should be(0)
     }
 
     "create a string on tostring" in {
