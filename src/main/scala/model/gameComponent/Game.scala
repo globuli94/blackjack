@@ -272,12 +272,12 @@ case class Game @Inject() (
         baseOptions ++ (if (players.nonEmpty) List("add <player>", "start") else List("add <player>"))
 
       case GameState.Betting =>
-        baseOptions ++ List("bet <amount>", "leave", "undo")
+        baseOptions ++ List("bet <amount>", "leave")
 
       case GameState.Started =>
         playerOpt match {
           case Some(player) =>
-            baseOptions ++ List("stand", "undo") ++
+            baseOptions ++ List("stand") ++
               (if (player.getHand.canHit) List("hit") else Nil) ++
               (if (player.getHand.canDoubleDown && player.getMoney >= player.getBet) List("double (down)") else Nil)
           // ++ (if (player.hand.canSplit) List("split") else Nil)  // Uncomment if needed
