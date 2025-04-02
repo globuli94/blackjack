@@ -1,9 +1,8 @@
-package view
+package view.GUI
 
-import controller.controllerComponent.*
-import model.gameComponent.*
-import model.gameComponent.GameState.{Betting, Evaluated, Initialized}
-import model.playerComponent.*
+import controller.ControllerInterface
+import model.modelComponent.GameState.{Betting, Evaluated, Initialized}
+import model.modelComponent.{GameState, Player}
 import util.{Event, Observer}
 
 import java.awt.Color
@@ -13,7 +12,7 @@ import scala.swing.{Action, BorderPanel, BoxPanel, Button, Dialog, Dimension, Fl
 
 case class ControlPanel(controller: ControllerInterface) extends FlowPanel {
   private val poolTableGreen = new Color(0x0e5932)
-  val player: PlayerInterface = controller.getGame.getPlayers(controller.getGame.getIndex)
+  val player: Player = controller.getGame.getPlayers(controller.getGame.getIndex)
 
   background = poolTableGreen
   private val border_color = java.awt.Color.WHITE
@@ -45,7 +44,7 @@ case class ControlPanel(controller: ControllerInterface) extends FlowPanel {
     minimumSize = button_dimension
     maximumSize = button_dimension
     action = Action("Hit") {
-      controller.hitNextPlayer()
+      controller.hitPlayer()
     }
   }
 
@@ -54,7 +53,7 @@ case class ControlPanel(controller: ControllerInterface) extends FlowPanel {
     minimumSize = button_dimension
     maximumSize = button_dimension
     action = Action("Stand") {
-      controller.standNextPlayer()
+      controller.standPlayer()
     }
   }
 
@@ -93,8 +92,8 @@ case class ControlPanel(controller: ControllerInterface) extends FlowPanel {
         contents += leaveButton
       case GameState.Started =>
         contents += stand_button
-        if (player.getHand.canHit) contents += hit_button
-        if (player.getHand.canDoubleDown) contents += double_down_button
+        if (player.hand.canHit) contents += hit_button
+        if (player.hand.canDoubleDown) contents += double_down_button
         contents += leaveButton
       case Evaluated =>
         contents += continue_button

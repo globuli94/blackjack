@@ -1,6 +1,7 @@
 package view
 
-import controller.controllerComponent.{Controller, ControllerInterface}
+import controller.ControllerInterface
+import controller.controllerComponent.Controller
 import util.{Event, Observer}
 
 import scala.util.{Failure, Success, Try}
@@ -20,9 +21,9 @@ class TUI(controller:ControllerInterface) extends Observer {
       case "continue" =>
         controller.startGame()
       case "hit" =>
-        controller.hitNextPlayer()
+        controller.hitPlayer()
       case "stand" =>
-        controller.standNextPlayer()
+        controller.standPlayer()
       case "double" =>
         controller.doubleDown()
       case "bet" =>

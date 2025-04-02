@@ -1,14 +1,12 @@
-import controller.controllerComponent.ControllerInterface
-import view.{GUI, TUI}
-import com.google.inject.{Guice, Injector}
+import model.ModelInterface
+import util.fileIOComponent.JSON.FileIOJSON
+import view.TUI
 
+import com.google.inject.{Guice, Injector}
+import controller.ControllerInterface
+import view.GUI.GUI
 import scala.collection.immutable.LazyList.cons
 import scala.io.StdIn.readLine
-import model.handComponent.*
-import model.cardComponent.*
-import model.gameComponent.GameInterface
-import util.fileIOComponent.JSON.FileIOJSON
-
 import scala.collection.immutable.Queue
 
 object Main {

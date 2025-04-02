@@ -2,6 +2,7 @@
 
 # Build Docker Image:
 # docker build -t globuli94/blackjack:v3 .
+# docker run -it --rm globuli94/blackjack:v3
 
 # Run Docker Container Locally:
 # download XQuartz

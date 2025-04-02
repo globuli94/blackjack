@@ -1,6 +1,6 @@
 package blackjack.models
 
-import model.cardComponent.Card
+import model.modelComponent.Card
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -8,7 +8,7 @@ class CardSpec extends AnyWordSpec with Matchers {
 
   "A Card" should {
     "return the correct suit" in {
-      Card("A", "Hearts").getSuit shouldBe("Hearts")
+      Card("A", "Hearts").suit shouldBe("Hearts")
     }
 
     "return the correct getValue for face cards" in {

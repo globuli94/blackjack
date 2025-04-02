@@ -1,29 +1,27 @@
-package view
+package view.GUI
 
-import model.playerComponent.PlayerState.{Betting, Idle, Playing, Standing}
-import model.cardComponent.{Card, CardInterface}
-import model.handComponent.Hand
-import model.playerComponent.{Player, PlayerInterface}
-import view.CardPanel
+import model.modelComponent.PlayerState.{Betting, Idle, Playing, Standing}
+import model.modelComponent.{Card, Hand, Player}
+import view.GUI.CardPanel
 
 import java.awt.Color
 import java.net.URL
 import javax.swing.{BorderFactory, ImageIcon}
-import scala.swing.{Alignment, BorderPanel, BoxPanel, Button, Color, Dimension, FlowPanel, Font, Frame, GridBagPanel, Label, Orientation, Swing}
+import scala.swing.*
 
-class PlayerPanel(player: PlayerInterface, active: Boolean) extends BoxPanel(Orientation.Vertical) {
-  preferredSize = if(player.getHand.getCards.nonEmpty) new Dimension(235, 250) else new Dimension(235, 150)
+class PlayerPanel(player: Player, active: Boolean) extends BoxPanel(Orientation.Vertical) {
+  preferredSize = if(player.hand.cards.nonEmpty) new Dimension(235, 250) else new Dimension(235, 150)
   minimumSize = new Dimension(235, 250)
   maximumSize = new Dimension(235, 250)
 
   private val poolTableGreen = new Color(0x0e5932)
   background = poolTableGreen
 
-  private val cards: Seq[CardInterface] = player.getHand.getCards
+  private val cards: Seq[Card] = player.hand.cards
 
   private val border_color = if(active) java.awt.Color.WHITE else java.awt.Color.BLACK
   private val thickBorder = if(active) BorderFactory.createLineBorder(border_color, 2) else BorderFactory.createLineBorder(border_color, 1)
-  private val titledBorder = BorderFactory.createTitledBorder(thickBorder, s"\t\t\t${player.getName}\t\t\t")
+  private val titledBorder = BorderFactory.createTitledBorder(thickBorder, s"\t\t\t${player.name}\t\t\t")
 
   // Set a larger font for the title
   titledBorder.setTitleFont(new Font("Arial", Font.Bold.id, 18))
@@ -68,7 +66,7 @@ class PlayerPanel(player: PlayerInterface, active: Boolean) extends BoxPanel(Ori
 
       contents += Swing.HStrut(15)
 
-      val label = Label(s"$$ ${player.getMoney}")
+      val label = Label(s"$$ ${player.money}")
       label.font = player_font
       label.foreground = Color.WHITE
 
@@ -87,7 +85,7 @@ class PlayerPanel(player: PlayerInterface, active: Boolean) extends BoxPanel(Ori
 
       contents += Swing.HStrut(15)
 
-      val bet_label = Label(s"$$ ${player.getBet}")
+      val bet_label = Label(s"$$ ${player.bet}")
       bet_label.font = player_font
       bet_label.foreground = Color.WHITE
 
@@ -99,14 +97,14 @@ class PlayerPanel(player: PlayerInterface, active: Boolean) extends BoxPanel(Ori
     contents += new BoxPanel(Orientation.Horizontal) {
       background = poolTableGreen
       val state_label: Label =
-        if(player.getState == Playing)
-          if(player.getHand.getCards.nonEmpty) Label(s"Value: ${player.getHand.getHandValue}") else Label()
-        else if(player.getState == Standing)
-          Label(s"Standing on: ${player.getHand.getHandValue}")
-        else if(player.getState == Betting || player.getState == Idle )
+        if(player.state == Playing)
+          if(player.hand.cards.nonEmpty) Label(s"Value: ${player.hand.getHandValue}") else Label()
+        else if(player.state == Standing)
+          Label(s"Standing on: ${player.hand.getHandValue}")
+        else if(player.state == Betting || player.state == Idle )
           Label("")
         else
-          Label(s"${player.getState} ${player.getHand.getHandValue}")
+          Label(s"${player.state} ${player.hand.getHandValue}")
       state_label.font = player_font
       state_label.foreground = Color.WHITE
 
@@ -119,7 +117,7 @@ class PlayerPanel(player: PlayerInterface, active: Boolean) extends BoxPanel(Ori
 
   contents += new BorderPanel {
     background = poolTableGreen
-    if(player.getHand.getCards.nonEmpty) add(cards_panel, BorderPanel.Position.Center)
+    if(player.hand.cards.nonEmpty) add(cards_panel, BorderPanel.Position.Center)
     add(player_stat_panel, BorderPanel.Position.South)
   }
 }

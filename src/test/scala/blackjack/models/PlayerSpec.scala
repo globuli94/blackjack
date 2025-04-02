@@ -3,7 +3,7 @@ package blackjack.models
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import model.*
-import model.playerComponent.{Player, PlayerState}
+import model.modelComponent.{Player, PlayerState}
 
 class PlayerSpec extends AnyWordSpec with Matchers {
 

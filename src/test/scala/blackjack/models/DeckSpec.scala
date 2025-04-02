@@ -1,12 +1,11 @@
 package blackjack.models
 
+import model.modelComponent.{Card, Deck}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.Queue
 import scala.util.Random
-import model.cardComponent.{Card, CardInterface}
-import model.deckComponent.Deck
 
 class DeckSpec extends AnyWordSpec with Matchers {
 
@@ -31,7 +30,7 @@ class DeckSpec extends AnyWordSpec with Matchers {
       val deck = Deck().shuffle
       val (drawnCard, newDeck) = deck.draw
 
-      drawnCard shouldBe a[CardInterface]
+      drawnCard shouldBe a[Card]
       newDeck.length shouldBe (deck.length - 1)
     }
 

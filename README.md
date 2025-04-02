@@ -1,8 +1,12 @@
-## sbt project compiled with Scala 3
+# ♠️♥️ Blackjack (Scala) ♣️♦️
 
-### Usage
+A **text-based (TUI)** and **graphical (GUI)** Blackjack game implemented in Scala using **MVC architecture**, with Docker support for seamless deployment.
 
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
+---
 
-For more information on the sbt-dotty plugin, see the
-[scala3-example-project](https://github.com/scala/scala3-example-project/blob/main/README.md).
+## 🚀 Features
+- **MVC Architecture** – Clean separation of Model, View, and Controller.
+- **Dual Interfaces** – Play via terminal (`TUI`) or GUI (`JavaFX/Swing`).
+- **Game Persistence** – Save/load game states using file I/O.
+- **Dockerized** – Run consistently across environments.
+- **Scala Best Practices** – Immutability, pattern matching, and FP.

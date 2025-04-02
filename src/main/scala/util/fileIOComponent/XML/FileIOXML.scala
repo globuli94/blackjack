@@ -1,14 +1,11 @@
 package util.fileIOComponent.XML
 
-import model.cardComponent.{Card, CardInterface}
-import model.dealerComponent.*
-import model.deckComponent.*
-import model.gameComponent.GameState.{Evaluated, Initialized, Started}
-import model.gameComponent.{Game, GameInterface, GameState}
-import model.handComponent.{Hand, HandInterface}
-import model.playerComponent.*
-import model.playerComponent.PlayerState.{Betting, Blackjack, Busted, DoubledDown, Idle, LOST, Playing, Split, Standing, WON}
-import util.fileIOComponent.FileIOInterface
+import model.ModelInterface
+import model.modelComponent.GameState.{Evaluated, Initialized, Started}
+
+import model.modelComponent.PlayerState.*
+import model.modelComponent.{Card, Dealer, DealerState, Deck, Game, GameState, Hand, Player, PlayerState}
+import util.FileIOInterface
 
 import scala.xml.{Elem, Node, NodeSeq, PrettyPrinter, XML}
 
@@ -48,44 +45,44 @@ class FileIOXML extends FileIOInterface {
   }
 
   // CARD
-  private def cardToXML(card: CardInterface): Elem = {
+  private def cardToXML(card: Card): Elem = {
     <card>
-      <rank>{card.getRank}</rank>
-      <suit>{card.getSuit}</suit>
+      <rank>{card.rank}</rank>
+      <suit>{card.suit}</suit>
     </card>
   }
 
-  private def cardFromXML(node: Node): CardInterface = {
+  private def cardFromXML(node: Node): Card = {
     val rank = (node \ "rank").text
     val suit = (node \ "suit").text
     Card(rank, suit)
   }
 
   // HAND
-  private def handToXML(hand: HandInterface): Elem = {
+  private def handToXML(hand: Hand): Elem = {
     <cards>
-      {hand.getCards.map(cardToXML)}
+      {hand.cards.map(cardToXML)}
     </cards>
   }
 
-  private def handFromXML(node: Node): HandInterface = {
+  private def handFromXML(node: Node): Hand = {
     val cardsNode = (node \ "cards").headOption.getOrElse(node)
     val cards = (cardsNode \ "card").map(cardFromXML).toList
     Hand(cards)
   }
 
   // PLAYER
-  private def playerToXML(player: PlayerInterface): Elem = {
+  private def playerToXML(player: Player): Elem = {
     <player>
-      <name>{player.getName}</name>
-      <hand>{handToXML(player.getHand)}</hand>
-      <money>{player.getMoney}</money>
-      <bet>{player.getBet}</bet>
-      <state>{player.getState.toString}</state>
+      <name>{player.name}</name>
+      <hand>{handToXML(player.hand)}</hand>
+      <money>{player.money}</money>
+      <bet>{player.bet}</bet>
+      <state>{player.state.toString}</state>
     </player>
   }
 
-  private def playerFromXML(node: Node): PlayerInterface = {
+  private def playerFromXML(node: Node): Player = {
     val name = (node \ "name").text
     val hand = handFromXML((node \ "hand").head)
     val money = (node \ "money").text.toInt
@@ -95,14 +92,14 @@ class FileIOXML extends FileIOInterface {
   }
 
   // DEALER
-  private def dealerToXML(dealer: DealerInterface): Elem = {
+  private def dealerToXML(dealer: Dealer): Elem = {
     <dealer>
-      <hand>{handToXML(dealer.getHand)}</hand>
-      <state>{dealer.getState.toString}</state>
+      <hand>{handToXML(dealer.hand)}</hand>
+      <state>{dealer.state.toString}</state>
     </dealer>
   }
 
-  private def dealerFromXML(node: Node): DealerInterface = {
+  private def dealerFromXML(node: Node): Dealer = {
     val dealerNode = (node \ "dealer").headOption.getOrElse(node)
     val hand = handFromXML((dealerNode \ "hand").head)
     val state = dealerStateFromString((dealerNode \ "state").text)
@@ -110,19 +107,19 @@ class FileIOXML extends FileIOInterface {
   }
 
   // DECK
-  private def deckToXML(deck: DeckInterface): Elem = {
+  private def deckToXML(deck: Deck): Elem = {
     <cards>
-      {deck.getCards.map(cardToXML)}
+      {deck.cards.map(cardToXML)}
     </cards>
   }
 
-  private def deckFromXML(node: Node): DeckInterface = {
+  private def deckFromXML(node: Node): Deck = {
     val cards = (node \ "cards" \ "card").map(cardFromXML).toList
     Deck(cards)
   }
 
   // GAME
-  private def gameToXML(game: GameInterface): Elem = {
+  private def gameToXML(game: ModelInterface): Elem = {
     <game>
       <current_idx>{game.getIndex}</current_idx>
       <players>
@@ -134,7 +131,7 @@ class FileIOXML extends FileIOInterface {
     </game>
   }
 
-  private def gameFromXML(node: Node): GameInterface = {
+  private def gameFromXML(node: Node): ModelInterface = {
     val idx = (node \ "current_idx").text.toInt
     val players = (node \ "players" \ "player").map(playerFromXML).toList
     val deck = deckFromXML((node \ "deck").head)
@@ -143,12 +140,12 @@ class FileIOXML extends FileIOInterface {
     Game(idx, players, deck, dealer, state)
   }
 
-  override def load(path: String = "game.xml"): GameInterface = {
+  override def load(path: String = "game.xml"): ModelInterface = {
     val source = XML.loadFile(path)
     gameFromXML(source)
   }
 
-  override def save(game: GameInterface, path: String = "game.xml"): Unit = {
+  override def save(game: ModelInterface, path: String = "game.xml"): Unit = {
     val xml = gameToXML(game)
     val prettyPrinter = new PrettyPrinter(120, 4)
     val prettyXml = prettyPrinter.format(xml)

@@ -1,9 +1,7 @@
 package blackjack.util.fileIO
 
-import model.dealerComponent.DealerState
+import model.modelComponent.{DealerState, GameState, PlayerState}
 import util.fileIOComponent.JSON.*
-import model.gameComponent.GameState
-import model.playerComponent.PlayerState
 import org.scalamock.function.MockFunction0
 import org.scalamock.proxy.MockFunction
 import org.scalatest.flatspec.AnyFlatSpec

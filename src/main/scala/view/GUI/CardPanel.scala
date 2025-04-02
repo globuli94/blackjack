@@ -1,30 +1,30 @@
-package view
+package view.GUI
 
-import model.cardComponent.{Card, CardInterface}
+import model.modelComponent.Card
 
-import scala.swing.*
-import javax.swing.ImageIcon
-import java.awt.{Graphics2D, Image}
 import java.awt.image.BufferedImage
-import javax.imageio.ImageIO
+import java.awt.{Graphics2D, Image}
 import java.io.File
+import javax.imageio.ImageIO
+import javax.swing.ImageIcon
+import scala.swing.*
 
-class CardPanel(card: CardInterface, scalePercent: Double = 0.5) extends Label {
+class CardPanel(card: Card, scalePercent: Double = 0.5) extends Label {
   background = new Color(0x0e5932)
 
-  val suit: String = card.getSuit
+  val suit: String = card.suit
   val rank: String =
-    card.getRank match {
+    card.rank match {
       case "J" => "Jack"
       case "Q" => "Queen"
       case "K" => "King"
       case "A" => "Ace"
       case "blank" => "back"
-      case _ => card.getRank
+      case _ => card.rank
     }
 
   val path: String =
-    if(card.getRank == "blank") s"src/main/resources/deck_pngs/back.png" else s"src/main/resources/deck_pngs/$suit$rank.png"
+    if(card.rank == "blank") s"src/main/resources/deck_pngs/back.png" else s"src/main/resources/deck_pngs/$suit$rank.png"
 
 
   // Function to resize image by percentage

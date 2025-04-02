@@ -1,15 +1,15 @@
 package controller.controllerComponent
 
 import com.google.inject.Inject
-import model.gameComponent.{GameInterface, GameState}
+import controller.ControllerInterface
+import model.ModelInterface
+import model.modelComponent.GameState
 import util.Event.*
-import util.fileIOComponent.FileIOInterface
-import util.{Event, Observable, Observer}
-import util.fileIOComponent.JSON.FileIOJSON
+import util.{Event, FileIOInterface, Observable}
 
-case class Controller @Inject (var game: GameInterface, fileIO: FileIOInterface) extends ControllerInterface with Observable {
+case class Controller @Inject (var game: ModelInterface, fileIO: FileIOInterface) extends ControllerInterface with Observable {
 
-  override def getGame: GameInterface = game
+  override def getGame: ModelInterface = game
 
   override def saveGame(): Unit = {
     fileIO.save(game)
@@ -39,7 +39,7 @@ case class Controller @Inject (var game: GameInterface, fileIO: FileIOInterface)
 
   override def addPlayer(name: String): Unit = {
     if (game.getState == GameState.Initialized || game.getState == GameState.Evaluated) {
-      if(game.getPlayers.exists(_.getName == name)) {
+      if(game.getPlayers.exists(_.name == name)) {
         notifyObservers(Event.errPlayerNameExists)
       } else {
         game = game.createPlayer(name)
@@ -62,19 +62,18 @@ case class Controller @Inject (var game: GameInterface, fileIO: FileIOInterface)
     }
   }
 
-  override def hitNextPlayer(): Unit = {
+  override def hitPlayer(): Unit = {
     val player = game.getPlayers(game.getIndex)
-    if (player.getHand.canHit && game.getState == GameState.Started) {
+    if (player.hand.canHit && game.getState == GameState.Started) {
       game = game.hitPlayer
       notifyObservers(Event.hitNextPlayer)
       saveGame()
     } else {
       notifyObservers(Event.invalidCommand)
     }
-
   }
 
-  override def standNextPlayer(): Unit = {
+  override def standPlayer(): Unit = {
     if (game.getState == GameState.Started) {
       game = game.standPlayer
       notifyObservers(Event.standNextPlayer)
@@ -88,7 +87,7 @@ case class Controller @Inject (var game: GameInterface, fileIO: FileIOInterface)
   override def doubleDown(): Unit = {
     val player = game.getPlayers(game.getIndex)
 
-    if (game.getState == GameState.Started && player.getHand.canDoubleDown && player.getBet <= player.getMoney) {
+    if (game.getState == GameState.Started && player.hand.canDoubleDown && player.bet <= player.money) {
       game = game.doubleDownPlayer
       notifyObservers(Event.doubleDown)
       saveGame()

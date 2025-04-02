@@ -1,18 +1,18 @@
-package controller.controllerComponent
+package controller
 
-import model.gameComponent.GameInterface
+import model.ModelInterface
 import util.Observable
 
 trait ControllerInterface extends Observable {
   def loadGame(): Unit
   def saveGame(): Unit
-  def getGame: GameInterface
+  def getGame: ModelInterface
   def initializeGame(): Unit
   def startGame(): Unit
   def addPlayer(name: String): Unit
   def leavePlayer(): Unit
-  def hitNextPlayer(): Unit
-  def standNextPlayer(): Unit
+  def hitPlayer(): Unit
+  def standPlayer(): Unit
   def doubleDown(): Unit
   def bet(amount: String): Unit
   def exit(): Unit

@@ -1,12 +1,9 @@
-package model.gameComponent
+package model.modelComponent
 
 import com.google.inject.Inject
-import model.cardComponent.CardInterface
-import model.dealerComponent.*
-import model.deckComponent.*
-import model.handComponent.*
-import model.playerComponent.*
-import model.playerComponent.PlayerState.{LOST, WON}
+import PlayerState.{LOST, WON}
+import model.modelComponent.{Card, Dealer, DealerState, Deck}
+import model.*
 
 enum GameState {
   case Initialized, Betting, Started, Evaluated
@@ -14,19 +11,19 @@ enum GameState {
 
 case class Game @Inject() (
                  current_idx: Int = 0,
-                 players: List[PlayerInterface] = List.empty,
-                 deck: DeckInterface = Deck(),
-                 dealer: DealerInterface = Dealer(),
+                 players: List[Player] = List.empty,
+                 deck: Deck = Deck(),
+                 dealer: Dealer = Dealer(),
                  state: GameState = GameState.Initialized
-                          ) extends GameInterface {
+                          ) extends ModelInterface {
 
   override def getIndex: Int = current_idx
-  override def getPlayers: List[PlayerInterface] = players
-  override def getDeck: DeckInterface = deck
+  override def getPlayers: List[Player] = players
+  override def getDeck: Deck = deck
+  override def getDealer: Dealer = dealer
   override def getState: GameState = state
-  override def getDealer: DealerInterface = dealer
   
-  override def createPlayer(name: String): GameInterface = {
+  override def createPlayer(name: String): ModelInterface = {
     if (players.length < 4) {
       this.copy(players = Player(name) :: players).evaluate
     } else {
@@ -34,9 +31,9 @@ case class Game @Inject() (
     }
   }
 
-  override def initialize: GameInterface = Game()
+  override def initialize: ModelInterface = Game()
 
-  override def leavePlayer(name: String = ""): GameInterface = {
+  override def leavePlayer(name: String = ""): ModelInterface = {
     val idx = if (current_idx == players.length - 1) 0 else current_idx
 
     if(players.length == 1) {
@@ -44,29 +41,29 @@ case class Game @Inject() (
     } else if(name.trim.isEmpty) {
       copy(players = players.patch(current_idx, Nil, 1), current_idx = idx).evaluate
     } else {
-      copy(players = players.filterNot(_.getName == name), current_idx = idx).evaluate
+      copy(players = players.filterNot(_.name == name), current_idx = idx).evaluate
     }
   }
 
   // performs the initial deal -> dealer 1 card, all players 2 cards, player state set to playing
-  override def deal: GameInterface = {
+  override def deal: ModelInterface = {
     val shuffled_deck = deck.shuffle
 
-    val (card: CardInterface, deck_after_dealer: DeckInterface) = shuffled_deck.draw
+    val (card: Card, deck_after_dealer: Deck) = shuffled_deck.draw
     val dealer_hand = Hand().addCard(card)
 
-    val (updated_players, final_deck) = players.foldLeft((List.empty[PlayerInterface], deck_after_dealer)) {
+    val (updated_players, final_deck) = players.foldLeft((List.empty[Player], deck_after_dealer)) {
       case ((playersAcc, currentDeck), player) =>
         // Draw two cards for each player
         val (first_card, deck_after_first_draw) = currentDeck.draw
         val (second_card, finalDeck) = deck_after_first_draw.draw
 
         // Add cards to player's hand
-        val updatedHand = player.getHand.addCard(first_card).addCard(second_card)
+        val updatedHand = player.hand.addCard(first_card).addCard(second_card)
 
         // Update player's state to playing
         val updatedPlayer =
-          Player(player.getName, updatedHand, player.getMoney, player.getBet, PlayerState.Playing)
+          Player(player.name, updatedHand, player.money, player.bet, PlayerState.Playing)
 
         // Accumulate the updated player and deck for the next iteration
         (playersAcc :+ updatedPlayer, finalDeck)
@@ -76,23 +73,23 @@ case class Game @Inject() (
   }
 
   // hits dealer if possible, else changes dealers state to bust or standing
-  override def hitDealer: GameInterface = {
-      val (card: CardInterface, new_deck: DeckInterface) = deck.draw
-      val new_dealer: DealerInterface = Dealer(dealer.getHand.addCard(card), dealer.getState)
+  override def hitDealer: ModelInterface = {
+    val (card: Card, new_deck: Deck) = deck.draw
+    val new_dealer: Dealer = Dealer(dealer.hand.addCard(card), dealer.state)
       copy(dealer = new_dealer, deck = new_deck).evaluate
   }
 
   // hits current player and sets player state to blackjack playing or busted, updates deck
-  override def hitPlayer: GameInterface = {
+  override def hitPlayer: ModelInterface = {
     players.lift(current_idx) match {
     case Some(player) =>
       val (card, new_deck) = deck.draw
-      val new_player_hand = player.getHand.addCard(card)
+      val new_player_hand = player.hand.addCard(card)
 
-      val updated_players: List[PlayerInterface] = players.map({
+      val updated_players: List[Player] = players.map({
         p => {
           if(p == player)
-            Player(p.getName, new_player_hand, p.getMoney, p.getBet, p.getState)
+            Player(p.name, new_player_hand, p.money, p.bet, p.state)
           else p
         }
       })
@@ -106,13 +103,13 @@ case class Game @Inject() (
   }
 
   // stands current player = updates player state to standing
-  override def standPlayer: GameInterface = {
+  override def standPlayer: ModelInterface = {
     players.lift(current_idx) match {
       case Some(player) =>
-        val updated_players: List[PlayerInterface] = players.map({
+        val updated_players: List[Player] = players.map({
           p => {
             if(p == player)
-              Player(p.getName, p.getHand, p.getMoney, p.getBet, PlayerState.Standing)
+              Player(p.name, p.hand, p.money, p.bet, PlayerState.Standing)
             else p
           }
         })
@@ -125,15 +122,15 @@ case class Game @Inject() (
   }
 
   // subtracts amount of money from player, updates money, bet and player state to playing
-  override def betPlayer(amount: Int): GameInterface = {
+  override def betPlayer(amount: Int): ModelInterface = {
     players.lift(current_idx) match {
       case Some(player) =>
-        val new_balance = player.getMoney - amount
+        val new_balance = player.money - amount
 
-        val updated_players: List[PlayerInterface] = players.map({
+        val updated_players: List[Player] = players.map({
           p => {
             if (p == player)
-              Player(p.getName, p.getHand, new_balance, amount, PlayerState.Playing)
+              Player(p.name, p.hand, new_balance, amount, PlayerState.Playing)
             else p
           }
         })
@@ -149,24 +146,24 @@ case class Game @Inject() (
   override def isValidBet(amount: Int): Boolean = {
     players.lift(current_idx) match {
       case Some(player) =>
-        amount <= player.getMoney
+        amount <= player.money
       case None => false
     }
   }
 
-  override def doubleDownPlayer: GameInterface = {
+  override def doubleDownPlayer: ModelInterface = {
     players.lift(current_idx) match {
       case Some(player) =>
-        val new_bet = player.getBet * 2
-        val new_balance = player.getMoney - player.getBet
+        val new_bet = player.bet * 2
+        val new_balance = player.money - player.bet
 
         val (card, new_deck) = deck.draw
-        val new_player_hand = player.getHand.addCard(card)
+        val new_player_hand = player.hand.addCard(card)
 
-        val updated_players: List[PlayerInterface] = players.map({
+        val updated_players: List[Player] = players.map({
           p => {
             if (p == player)
-              Player(p.getName, new_player_hand, new_balance, new_bet, PlayerState.DoubledDown)
+              Player(p.name, new_player_hand, new_balance, new_bet, PlayerState.DoubledDown)
             else p
           }
         })
@@ -179,10 +176,10 @@ case class Game @Inject() (
     }
   }
 
-  override def startGame: GameInterface = {
+  override def startGame: ModelInterface = {
     val updated_players = players.map(
       p =>
-        Player(p.getName, Hand(), p.getMoney, p.getBet, PlayerState.Betting)
+        Player(p.name, Hand(), p.money, p.bet, PlayerState.Betting)
     )
 
     copy(
@@ -193,27 +190,27 @@ case class Game @Inject() (
     ).evaluate
   }
 
-  override def evaluate: GameInterface = {
+  override def evaluate: ModelInterface = {
     // Evaluate player states
-    val evaluated_players: List[PlayerInterface] = players.map {
-      case player if player.getState == PlayerState.Standing => player
-      case player if player.getHand.isBust =>
-        Player(player.getName, player.getHand, player.getMoney, player.getBet, PlayerState.Busted)
-      case player if player.getHand.hasBlackjack =>
-        Player(player.getName, player.getHand, player.getMoney, player.getBet, PlayerState.Blackjack)
+    val evaluated_players: List[Player] = players.map {
+      case player if player.state == PlayerState.Standing => player
+      case player if player.hand.isBust =>
+        Player(player.name, player.hand, player.money, player.bet, PlayerState.Busted)
+      case player if player.hand.hasBlackjack =>
+        Player(player.name, player.hand, player.money, player.bet, PlayerState.Blackjack)
       case player => player
     }
 
-    val evaluated_dealer: DealerInterface = dealer match {
-      case d if d.getHand.isBust =>
-        Dealer(d.getHand, DealerState.Bust)
-      case d if d.getHand.getHandValue >= 17 =>
-        Dealer(d.getHand, DealerState.Standing)
+    val evaluated_dealer: Dealer = dealer match {
+      case d if d.hand.isBust =>
+        Dealer(d.hand, DealerState.Bust)
+      case d if d.hand.getHandValue >= 17 =>
+        Dealer(d.hand, DealerState.Standing)
       case _ => dealer
     }
 
-    val any_playing = evaluated_players.exists(_.getState == PlayerState.Playing)
-    val any_betting = evaluated_players.exists(_.getState == PlayerState.Betting)
+    val any_playing = evaluated_players.exists(_.state == PlayerState.Playing)
+    val any_betting = evaluated_players.exists(_.state == PlayerState.Betting)
 
     state match {
       case GameState.Betting if !any_betting => deal.evaluate
@@ -221,7 +218,7 @@ case class Game @Inject() (
       case GameState.Started if any_playing => {
         val current_player = evaluated_players(current_idx)
         val new_index =
-          if(current_player.getState == PlayerState.Blackjack || current_player.getState == PlayerState.Busted) {
+          if(current_player.state == PlayerState.Blackjack || current_player.state == PlayerState.Busted) {
             current_idx + 1
           } else {
             current_idx
@@ -230,26 +227,26 @@ case class Game @Inject() (
         copy(current_idx = new_index, players = evaluated_players)
       }
 
-      case GameState.Started if !any_playing && evaluated_dealer.getState != DealerState.Standing && evaluated_dealer.getState != DealerState.Bust =>
+      case GameState.Started if !any_playing && evaluated_dealer.state != DealerState.Standing && evaluated_dealer.state != DealerState.Bust =>
         copy(dealer = evaluated_dealer).hitDealer.evaluate // Ensure evaluation continues after hitting dealer
 
       case GameState.Started
-        if !any_playing && (evaluated_dealer.getState == DealerState.Bust || evaluated_dealer.getState == DealerState.Standing) =>
+        if !any_playing && (evaluated_dealer.state == DealerState.Bust || evaluated_dealer.state == DealerState.Standing) =>
           val evaluated_players_bets = evaluated_players.map { p =>
-            p.getState match {
-              case PlayerState.Blackjack if dealer.getHand.hasBlackjack =>
-                Player(p.getName, p.getHand, p.getMoney, 0, LOST)
+            p.state match {
+              case PlayerState.Blackjack if dealer.hand.hasBlackjack =>
+                Player(p.name, p.hand, p.money, 0, LOST)
               case PlayerState.Blackjack =>
-                val money_after_winning = p.getMoney + p.getBet * 2
-                Player(p.getName, p.getHand, money_after_winning, 0, WON)
+                val money_after_winning = p.money + p.bet * 2
+                Player(p.name, p.hand, money_after_winning, 0, WON)
               case PlayerState.Standing | PlayerState.DoubledDown
-                if dealer.getHand.getHandValue >= p.getHand.getHandValue && !dealer.getHand.isBust =>
-                  Player(p.getName, p.getHand, p.getMoney, 0, LOST)
+                if dealer.hand.getHandValue >= p.hand.getHandValue && !dealer.hand.isBust =>
+                  Player(p.name, p.hand, p.money, 0, LOST)
               case PlayerState.Standing | PlayerState.DoubledDown =>
-                val money_after_winning = p.getMoney + p.getBet * 2
-                Player(p.getName, p.getHand, money_after_winning, 0, WON)
+                val money_after_winning = p.money + p.bet * 2
+                Player(p.name, p.hand, money_after_winning, 0, WON)
               case PlayerState.Busted =>
-                Player(p.getName, p.getHand, p.getMoney, 0, LOST)
+                Player(p.name, p.hand, p.money, 0, LOST)
               case _ => p
             }
           }
@@ -265,7 +262,7 @@ case class Game @Inject() (
   override def getPlayerOptions: List[String] = {
     val baseOptions = List("exit")
 
-    val playerOpt: Option[PlayerInterface] = players.lift(current_idx)
+    val playerOpt: Option[Player] = players.lift(current_idx)
 
     val options = state match {
       case GameState.Initialized =>
@@ -278,8 +275,8 @@ case class Game @Inject() (
         playerOpt match {
           case Some(player) =>
             baseOptions ++ List("stand") ++
-              (if (player.getHand.canHit) List("hit") else Nil) ++
-              (if (player.getHand.canDoubleDown && player.getMoney >= player.getBet) List("double (down)") else Nil)
+              (if (player.hand.canHit) List("hit") else Nil) ++
+              (if (player.hand.canDoubleDown && player.money >= player.bet) List("double (down)") else Nil)
           // ++ (if (player.hand.canSplit) List("split") else Nil)  // Uncomment if needed
           case None => baseOptions
         }
@@ -308,11 +305,11 @@ case class Game @Inject() (
     val stringBuilder = new StringBuilder()
 
     // Dealer Box Centered
-    val dealerHand = if (dealer.getHand.length == 1) f"[* *] ${dealer.getHand.toString}" else f" ${dealer.getHand.toString} "
+    val dealerHand = if (dealer.hand.cards.length == 1) f"[* *] ${dealer.hand.toString}" else f" ${dealer.hand.toString} "
     val dealerValue = f"${
-      if (dealer.getHand.isBust) "Busted"
-      else if (dealer.getHand.hasBlackjack) "Blackjack"
-      else f"Value: ${dealer.getHand.getHandValue}"
+      if (dealer.hand.isBust) "Busted"
+      else if (dealer.hand.hasBlackjack) "Blackjack"
+      else f"Value: ${dealer.hand.getHandValue}"
     }"
 
     def centerText(text: String, width: Int): String = {
@@ -343,12 +340,12 @@ case class Game @Inject() (
     val playerBoxes = players.map { player =>
       val playerBoxTop = if(players.indexOf(player) == current_idx) currentBoxTop else boxTop
 
-      val playerName  = s"Player: ${player.getName.take(25)}"  // Truncate to 35 chars
-      val playerBank  = s"Bank: $$${player.getMoney.toString.take(25)}"  // Truncate to 35 chars
-      val playerHand  = s"Hand: ${player.getHand.toString.take(25)}"  // Truncate to 35 chars
-      val playerBet   = s"Bet: $$${player.getBet.toString.take(25)}"  // Truncate to 35 chars
-      val playerValue = s"Value: ${player.getHand.getHandValue.toString.take(25)}"  // Truncate to 35 chars
-      val playerState = s"State: ${player.getState.toString.take(25)}"  // Truncate to 35 chars
+      val playerName  = s"Player: ${player.name.take(25)}"  // Truncate to 35 chars
+      val playerBank  = s"Bank: $$${player.money.toString.take(25)}"  // Truncate to 35 chars
+      val playerHand  = s"Hand: ${player.hand.toString.take(25)}"  // Truncate to 35 chars
+      val playerBet   = s"Bet: $$${player.bet.toString.take(25)}"  // Truncate to 35 chars
+      val playerValue = s"Value: ${player.hand.getHandValue.toString.take(25)}"  // Truncate to 35 chars
+      val playerState = s"State: ${player.state.toString.take(25)}"  // Truncate to 35 chars
 
       // Format each line inside the box
       val nameLine  = f"| $playerName%-31s |"
@@ -381,7 +378,7 @@ case class Game @Inject() (
     stringBuilder.append(s"${reset}------------------------------------------------------\n")
 
     if (players.nonEmpty) {
-      stringBuilder.append(s"Current Player: ${players(current_idx).getName}, State: ${players(current_idx).getState}\n")
+      stringBuilder.append(s"Current Player: ${players(current_idx).name}, State: ${players(current_idx).state}\n")
     }
 
     stringBuilder.append("Options: ")

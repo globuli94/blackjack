@@ -1,16 +1,14 @@
 package blackjack.controllers
 
-import controller.controllerComponent.{Controller, ControllerInterface}
-import model.cardComponent.{Card, CardInterface}
-import model.deckComponent.{Deck, DeckInterface}
-import model.gameComponent.{Game, GameInterface, GameState}
-import model.handComponent.{Hand, HandInterface}
-import model.playerComponent.PlayerState.{Betting, Idle}
-import model.playerComponent.{Player, PlayerInterface, PlayerState}
+import controller.ControllerInterface
+import controller.controllerComponent.Controller
+import model.ModelInterface
+import model.modelComponent.PlayerState.{Betting, Idle}
+import model.modelComponent.{Card, Deck, Game, GameState, Hand, Player, PlayerState}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers.should
-import util.fileIOComponent.FileIOInterface
+import util.FileIOInterface
 import util.fileIOComponent.JSON.FileIOJSON
 
 class ControllerSpec extends AnyWordSpec with Matchers {
@@ -19,7 +17,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     val fileIO: FileIOInterface =  FileIOJSON()
 
     "load the last saved game on load" in {
-      val game: GameInterface = Game()
+      val game: ModelInterface = Game()
       val controller: ControllerInterface = Controller(game, fileIO)
 
       controller.saveGame()
@@ -29,7 +27,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "initialize a game" in {
-      val game: GameInterface = Game()
+      val game: ModelInterface = Game()
       val controller: ControllerInterface = Controller(game, fileIO)
 
       controller.initializeGame()
@@ -40,7 +38,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "start not start a game without players" in {
-      val game: GameInterface = Game()
+      val game: ModelInterface = Game()
       val controller: ControllerInterface = Controller(game, fileIO)
 
       controller.initializeGame()
@@ -50,10 +48,10 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "start a game with players" in {
-      val player: PlayerInterface = Player("Steve")
-      val player2: PlayerInterface = Player("Mark")
-      val game1: GameInterface = Game(players = List(player, player2), state = GameState.Initialized)
-      val game2: GameInterface = Game(players = List(player, player2), state = GameState.Evaluated)
+      val player: Player = Player("Steve")
+      val player2: Player = Player("Mark")
+      val game1: ModelInterface = Game(players = List(player, player2), state = GameState.Initialized)
+      val game2: ModelInterface = Game(players = List(player, player2), state = GameState.Evaluated)
       val controller1: ControllerInterface = Controller(game1, fileIO)
       val controller2: ControllerInterface = Controller(game2, fileIO)
 
@@ -65,9 +63,9 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "add a player" in {
-      val game1: GameInterface = Game(state = GameState.Initialized)
-      val game2: GameInterface = Game(state = GameState.Evaluated)
-      val game3: GameInterface = Game(state = GameState.Betting)
+      val game1: ModelInterface = Game(state = GameState.Initialized)
+      val game2: ModelInterface = Game(state = GameState.Evaluated)
+      val game3: ModelInterface = Game(state = GameState.Betting)
 
       val controller1: ControllerInterface = Controller(game1, fileIO)
       val controller2: ControllerInterface = Controller(game2, fileIO)
@@ -84,7 +82,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "leave a player when game not empty" in {
-      val game1: GameInterface = Game(state = GameState.Initialized)
+      val game1: ModelInterface = Game(state = GameState.Initialized)
       val controller1: ControllerInterface = Controller(game1, fileIO)
 
       controller1.addPlayer("Steve")
@@ -94,7 +92,7 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "not leave a player when game empty" in {
-      val game1: GameInterface = Game(state = GameState.Initialized)
+      val game1: ModelInterface = Game(state = GameState.Initialized)
       val controller1: ControllerInterface = Controller(game1, fileIO)
 
       controller1.leavePlayer()
@@ -103,12 +101,12 @@ class ControllerSpec extends AnyWordSpec with Matchers {
     }
 
     "hit next player if can hit" in {
-      val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test", state = PlayerState.Playing)
-      val hand: HandInterface = player.getHand.addCard(deck.draw(0))
-      val player_with_hand = Player(name = player.getName, hand = hand)
+      val deck: Deck = Deck().shuffle
+      val player: Player = Player("test", state = PlayerState.Playing)
+      val hand: Hand = player.hand.addCard(deck.draw(0))
+      val player_with_hand = Player(name = player.name, hand = hand)
 
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Started,
           players = List(player_with_hand, player),
@@ -116,59 +114,59 @@ class ControllerSpec extends AnyWordSpec with Matchers {
 
       val controller = Controller(game1, fileIO)
 
-      controller.hitNextPlayer()
+      controller.hitPlayer()
 
-      controller.game.getPlayers.head.getHand.length should be(2)
+      controller.game.getPlayers.head.hand.cards.length should be(2)
     }
 
     "not hit next player if game not started" in {
-      val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test", state = PlayerState.Playing)
-      val hand: HandInterface = player.getHand.addCard(deck.draw(0))
-      val player_with_hand = Player(name = player.getName, hand = hand)
+      val deck: Deck = Deck().shuffle
+      val player: Player = Player("test", state = PlayerState.Playing)
+      val hand: Hand = player.hand.addCard(deck.draw(0))
+      val player_with_hand = Player(name = player.name, hand = hand)
 
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Initialized,
           players = List(player_with_hand, player),
           deck = deck)
 
       val controller = Controller(game1, fileIO)
-      controller.hitNextPlayer()
+      controller.hitPlayer()
 
       controller.getGame.getState should be (GameState.Initialized)
     }
 
     "stand next player when game state is started" in {
       val deck = Deck().shuffle
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Started,
           players = List(Player("StandingPlayer"), Player("notStanding", state = PlayerState.Playing)),
           deck = deck)
       val controller: ControllerInterface = Controller(game1, fileIO)
 
-      controller.standNextPlayer()
-      controller.getGame.getPlayers.head.getState should be (PlayerState.Standing)
+      controller.standPlayer()
+      controller.getGame.getPlayers.head.state should be (PlayerState.Standing)
     }
 
     "not stand next player if game not started" in {
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(state = GameState.Initialized)
 
       val controller = Controller(game1, fileIO)
-      controller.standNextPlayer()
+      controller.standPlayer()
 
       controller.getGame.getState should be(GameState.Initialized)
     }
 
     "double down next player if possible" in {
-      val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test")
-      val hand: HandInterface = Hand().addCard(Card("2", "Hearts")).addCard(Card("7", "Hearts"))
-      val player_with_hand = Player(name = player.getName, hand = hand, bet = 100, money = 200, state = PlayerState.Betting)
+      val deck: Deck = Deck().shuffle
+      val player: Player = Player("test")
+      val hand: Hand = Hand().addCard(Card("2", "Hearts")).addCard(Card("7", "Hearts"))
+      val player_with_hand = Player(name = player.name, hand = hand, bet = 100, money = 200, state = PlayerState.Betting)
 
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Started,
           players = List(player_with_hand, player),
@@ -177,16 +175,16 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val controller = Controller(game1, fileIO)
       controller.doubleDown()
 
-      controller.game.getPlayers.head.getHand.length should be(3)
+      controller.game.getPlayers.head.hand.cards.length should be(3)
     }
 
     "not double down if not possible" in {
-      val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test")
-      val hand: HandInterface = Hand().addCard(Card("5", "Hearts")).addCard(Card("7", "Hearts"))
-      val player_with_hand = Player(name = player.getName, hand = hand, bet = 100, money = 200, state = PlayerState.Betting)
+      val deck: Deck = Deck().shuffle
+      val player: Player = Player("test")
+      val hand: Hand = Hand().addCard(Card("5", "Hearts")).addCard(Card("7", "Hearts"))
+      val player_with_hand = Player(name = player.name, hand = hand, bet = 100, money = 200, state = PlayerState.Betting)
 
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Started,
           players = List(player_with_hand, player),
@@ -195,15 +193,15 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val controller = Controller(game1, fileIO)
       controller.doubleDown()
 
-      controller.game.getPlayers.head.getHand.length should be(2)
+      controller.game.getPlayers.head.hand.cards.length should be(2)
     }
 
     "bet if allowed by game state" in {
-      val card: CardInterface = Card("2", "Hearts")
-      val deck: DeckInterface = Deck(List(card, card))
-      val player: PlayerInterface = Player(name = "steve", bet = 0, money = 200, state = PlayerState.Betting)
+      val card: Card = Card("2", "Hearts")
+      val deck: Deck = Deck(List(card, card))
+      val player: Player = Player(name = "steve", bet = 0, money = 200, state = PlayerState.Betting)
 
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Betting,
           players = List(player),
@@ -212,15 +210,15 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val controller = Controller(game1, fileIO)
       controller.bet("100")
 
-      controller.getGame.getPlayers.head.getBet should be (100)
+      controller.getGame.getPlayers.head.bet should be (100)
     }
 
     "not bet if bet is invalid" in {
-      val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test")
-      val player_with_hand = Player(name = player.getName, bet = 0, money = 200, state = PlayerState.Betting)
+      val deck: Deck = Deck().shuffle
+      val player: Player = Player("test")
+      val player_with_hand = Player(name = player.name, bet = 0, money = 200, state = PlayerState.Betting)
 
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Betting,
           players = List(player_with_hand, player),
@@ -229,19 +227,19 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val controller = Controller(game1, fileIO)
       controller.bet("1000")
 
-      controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
+      controller.getGame.getPlayers.head.state should be(PlayerState.Betting)
 
       controller.bet("test")
 
-      controller.getGame.getPlayers.head.getState should be(PlayerState.Betting)
+      controller.getGame.getPlayers.head.state should be(PlayerState.Betting)
     }
 
     "not bet if not allowed by game state" in {
-      val deck: DeckInterface = Deck().shuffle
-      val player: PlayerInterface = Player("test")
-      val player_with_hand = Player(name = player.getName, bet = 0, money = 200, state = PlayerState.Betting)
+      val deck: Deck = Deck().shuffle
+      val player: Player = Player("test")
+      val player_with_hand = Player(name = player.name, bet = 0, money = 200, state = PlayerState.Betting)
 
-      val game1: GameInterface =
+      val game1: ModelInterface =
         Game(
           state = GameState.Started,
           players = List(player_with_hand, player),
@@ -250,11 +248,11 @@ class ControllerSpec extends AnyWordSpec with Matchers {
       val controller = Controller(game1, fileIO)
       controller.bet("100")
 
-      controller.getGame.getPlayers.head.getBet should be(0)
+      controller.getGame.getPlayers.head.bet should be(0)
     }
 
     "create a string on tostring" in {
-      val game : GameInterface = Game()
+      val game : ModelInterface = Game()
       val controller : ControllerInterface = Controller(game, fileIO)
 
       controller.toString should be (a[String])

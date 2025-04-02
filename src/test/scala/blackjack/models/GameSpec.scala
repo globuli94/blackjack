@@ -3,15 +3,10 @@ package blackjack.models
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import model.*
-import model.dealerComponent.DealerState.Bust
-import model.gameComponent.GameState.{Evaluated, Initialized, Started}
-import model.playerComponent.PlayerState.*
-import model.cardComponent.Card
-import model.dealerComponent.{Dealer, DealerState}
-import model.deckComponent.Deck
-import model.gameComponent.{Game, GameState}
-import model.handComponent.Hand
-import model.playerComponent.{Player, PlayerState}
+import model.modelComponent.DealerState.Bust
+import model.modelComponent.GameState.{Evaluated, Initialized, Started}
+import model.modelComponent.PlayerState.*
+import model.modelComponent.{Card, Dealer, DealerState, Deck, Game, GameState, Hand, Player, PlayerState}
 
 class GameSpec extends AnyWordSpec with Matchers {
 
@@ -40,7 +35,7 @@ class GameSpec extends AnyWordSpec with Matchers {
       val game5 = game4.createPlayer("Eve") // Should not add a 5th player
 
       game5.getPlayers.size shouldBe 4
-      game5.getPlayers.map(_.getName) should contain allElementsOf List("Alice", "Bob", "Charlie", "David")
+      game5.getPlayers.map(_.name) should contain allElementsOf List("Alice", "Bob", "Charlie", "David")
     }
 
     "correctly remove the current player and adjust index" in {
@@ -81,7 +76,7 @@ class GameSpec extends AnyWordSpec with Matchers {
       val game = Game().copy(dealer = Dealer(initialDealerHand)).startGame // Next card = 7
 
       val updatedGame = game.hitDealer
-      updatedGame.getDealer.getHand.length == 3
+      updatedGame.getDealer.hand.cards.length == 3
     }
 
 
@@ -94,8 +89,8 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.hitPlayer
 
-      updatedGame.getPlayers.head.getHand.length == 3
-      updatedGame.getPlayers(1).getHand.length == 2
+      updatedGame.getPlayers.head.hand.cards.length == 3
+      updatedGame.getPlayers(1).hand.cards.length == 2
     }
 
     "return input game when acting on empty game" in {
@@ -114,7 +109,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.hitPlayer
 
-      updatedGame.getPlayers.head.getState shouldBe PlayerState.Busted
+      updatedGame.getPlayers.head.state shouldBe PlayerState.Busted
     }
 
     "mark a player as blackjack when they have 21" in {
@@ -124,7 +119,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.evaluate
 
-      updatedGame.getPlayers.head.getState shouldBe PlayerState.Blackjack
+      updatedGame.getPlayers.head.state shouldBe PlayerState.Blackjack
     }
 
     "allow a player to stand and leave all other players the same" in {
@@ -134,8 +129,8 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val updatedGame = game.standPlayer
 
-      updatedGame.getPlayers.head.getState shouldBe PlayerState.Standing
-      updatedGame.getPlayers(1).getState shouldBe PlayerState.Playing
+      updatedGame.getPlayers.head.state shouldBe PlayerState.Standing
+      updatedGame.getPlayers(1).state shouldBe PlayerState.Playing
     }
 
     "allow a player to bet and subtract money correctly" in {
@@ -153,7 +148,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       updatedGame_with_1.getIndex shouldBe 0
 
-      updatedGame_with_2.getPlayers.head.getState shouldBe PlayerState.Playing
+      updatedGame_with_2.getPlayers.head.state shouldBe PlayerState.Playing
       updatedGame_with_2.getIndex shouldBe game_with_2.getIndex + 1
     }
 
@@ -187,7 +182,7 @@ class GameSpec extends AnyWordSpec with Matchers {
 
       val bet_game = game.betPlayer(100)
 
-      bet_game.getPlayers(1).getBet should be(0)
+      bet_game.getPlayers(1).bet should be(0)
     }
 
     "allow a player to double down" in {
@@ -202,7 +197,7 @@ class GameSpec extends AnyWordSpec with Matchers {
       val updatedGame_with_2 = game_with_2.doubleDownPlayer
 
       updatedGame should equal(game)
-      updatedGame_with_2.getPlayers.head.getState shouldBe PlayerState.DoubledDown
+      updatedGame_with_2.getPlayers.head.state shouldBe PlayerState.DoubledDown
       updatedGame_with_2.getPlayers(1) should equal(player2)
 
     }
@@ -235,7 +230,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.getPlayers.head.getState shouldBe(PlayerState.LOST)
+        evaluated_game.getPlayers.head.state shouldBe(PlayerState.LOST)
       }
 
       "eval correctly if player has blackjack" in {
@@ -245,7 +240,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.WON)
+        evaluated_game.getPlayers.head.state shouldBe (PlayerState.WON)
       }
 
       "eval correctly if player is bust" in {
@@ -253,7 +248,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, game.getDealer, GameState.Started).evaluate
 
-        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.LOST)
+        evaluated_game.getPlayers.head.state shouldBe (PlayerState.LOST)
       }
 
       "eval correctly if player has lost standing" in {
@@ -264,7 +259,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.LOST)
+        evaluated_game.getPlayers.head.state shouldBe (PlayerState.LOST)
       }
 
       "eval correctly if player has won standing" in {
@@ -276,7 +271,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.WON)
+        evaluated_game.getPlayers.head.state shouldBe (PlayerState.WON)
       }
 
       "eval correctly if player has won double down" in {
@@ -286,7 +281,7 @@ class GameSpec extends AnyWordSpec with Matchers {
         val evaluated_game =
           Game(game.getIndex, List(player), game.getDeck, dealer, GameState.Started).evaluate
 
-        evaluated_game.getPlayers.head.getState shouldBe (PlayerState.WON)
+        evaluated_game.getPlayers.head.state shouldBe (PlayerState.WON)
       }
 
       "return player if any other player state" in {

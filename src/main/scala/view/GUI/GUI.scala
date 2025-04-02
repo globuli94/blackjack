@@ -1,17 +1,17 @@
-package view
+package view.GUI
 
-import controller.controllerComponent.ControllerInterface
-import util.{Event, Observer}
-import model.gameComponent.*
-import model.gameComponent.GameState.Initialized
-import model.playerComponent.*
+import controller.ControllerInterface
+import model.modelComponent.GameState.Initialized
+import model.modelComponent.{GameState, Player}
 import util.Event.*
+import util.{Event, Observer}
+import view.GUI.{ControlPanel, DealerPanel}
 
-import scala.swing.*
-import scala.swing.MenuBar.NoMenuBar.revalidate
-import javax.swing.{ImageIcon, WindowConstants}
 import java.awt.{Color, Font, Graphics2D, RenderingHints}
 import java.net.URL
+import javax.swing.{ImageIcon, WindowConstants}
+import scala.swing.*
+import scala.swing.MenuBar.NoMenuBar.revalidate
 import scala.swing.event.WindowClosing
 
 class GUI(controller: ControllerInterface) extends Frame with Observer {
@@ -152,7 +152,7 @@ class GUI(controller: ControllerInterface) extends Frame with Observer {
     background = poolTableGreen
     contents.clear() // Remove old players
 
-    val player: PlayerInterface = controller.getGame.getPlayers(controller.getGame.getIndex)
+    val player: Player = controller.getGame.getPlayers(controller.getGame.getIndex)
 
     contents += ControlPanel(controller)
   }
@@ -177,7 +177,7 @@ class GUI(controller: ControllerInterface) extends Frame with Observer {
       contents +=
         new BorderPanel() {
           background = poolTableGreen
-          if(controller.getGame.getDealer.getHand.getCards.nonEmpty) add(DealerPanel(controller.getGame.getDealer), BorderPanel.Position.North)
+          if(controller.getGame.getDealer.hand.cards.nonEmpty) add(DealerPanel(controller.getGame.getDealer), BorderPanel.Position.North)
           if(controller.getGame.getPlayers.nonEmpty) add(player_panel, BorderPanel.Position.Center)
           if(controller.getGame.getPlayers.nonEmpty) add(player_control_panel, BorderPanel.Position.South)
           //border = Swing.EmptyBorder(10, 0 , 0, 10)
